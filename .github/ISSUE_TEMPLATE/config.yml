@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and project documentation
+    url: https://github.com/ADAMELR/AER-PDF-Studio#readme
+    about: Review setup, limitations and current capabilities before opening an issue.
