@@ -1,5 +1,6 @@
 """Multi-page comparisons with conservative translation-only alignment and audit manifest."""
 import json
+import csv
 from pathlib import Path
 import pypdfium2 as pdfium
 from compare import compare_pages
@@ -30,4 +31,11 @@ def compare_document_pages(original, revised, output_folder, scale=1.5, auto_ali
         results.append(result)
         manifest["pages"].append({"page":page+1,"output":result.name,**info})
     (output/"alignment_report.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
+    with (output/"drawing_revision_register.csv").open("w",newline="",encoding="utf-8-sig") as stream:
+        writer=csv.writer(stream)
+        writer.writerow(("Page","Comparison Image","Registration Method","Changed Pixel %","X Offset (px)","Y Offset (px)","Review Status"))
+        for page in manifest["pages"]:
+            writer.writerow((page["page"],page["output"],page["registration_method"],
+                             format(page["changed_pixel_fraction"]*100,".2f"),
+                             page["shift_x_px"],page["shift_y_px"],"REQUIRES MANUAL REVIEW"))
     return results
