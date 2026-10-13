@@ -1,11 +1,11 @@
-"""Interactive paired control point picker for first-page PDF alignment."""
+"""Interactive paired control point picker for selected-page PDF alignment."""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import pypdfium2 as pdfium
 from PIL import ImageTk
 
 class PointPicker(tk.Toplevel):
-    """Pick two corresponding points on each image, in raster pixel coordinates."""
+    """Pick three corresponding points on each image, in raster pixel coordinates."""
     def __init__(self, parent, original, revised, scale=1.5, page_index=0):
         super().__init__(parent)
         self.title(f"Register drawings — page {page_index + 1}")
@@ -16,7 +16,7 @@ class PointPicker(tk.Toplevel):
         self.result=None
         self.points=[[],[]]
         self.photos=[]
-        ttk.Label(self,text="Choose three DISTINCT reference points on ORIGINAL, then the corresponding two points on REVISED. Use identifiable corners or grid intersections. Points 1 and 2 define alignment; point 3 independently checks accuracy.",wraplength=1000).pack(padx=8,pady=8)
+        ttk.Label(self,text="Choose three DISTINCT reference points on ORIGINAL, then the corresponding three points on REVISED. Use identifiable corners or grid intersections. Points 1 and 2 define alignment; point 3 independently checks accuracy.",wraplength=1000).pack(padx=8,pady=8)
         bar=ttk.Frame(self)
         bar.pack(fill="x")
         self.status=ttk.Label(bar,text="Original: 0/3    Revised: 0/3")
@@ -70,7 +70,7 @@ class PointPicker(tk.Toplevel):
         self.points=[[],[]]
         for canvas in self.canvases:
             canvas.delete("picked")
-        self.status.config(text="Original: 0/2    Revised: 0/2")
+        self.status.config(text="Original: 0/3    Revised: 0/3")
 
     def accept(self):
         if any(len(points)!=3 for points in self.points):
