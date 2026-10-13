@@ -1,6 +1,13 @@
-# AER PDF Studio — Community Preview 1.0
+# AER PDF Studio — Community Preview 1.1
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
+
+## Arabic / English support (preview)
+
+- Main toolbar language switch (en / ar); English and Arabic labels on principal commands
+- Search existing PDF text layers for Arabic or English Unicode text from the viewer; jumps to the first matching page
+- Arabic filenames and pre-rendered text can work through the underlying Unicode and PDFium handling, but are not yet independently tested with representative documents
+- No OCR for scanned Arabic PDFs, direct Arabic text editing, embedded Arabic font authoring, text highlighting, or complete RTL layout yet
 
 ## Features
 
