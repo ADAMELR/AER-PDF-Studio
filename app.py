@@ -4,11 +4,12 @@ from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from viewer import PDFViewer
 from compare_batch import compare_document_pages
+from point_picker import pick_control_points
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.7")
+        self.title("AER PDF Studio — Community Preview 0.8")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
@@ -62,10 +63,20 @@ class App(tk.Tk):
         revised = filedialog.askopenfilename(title="Select revised drawing PDF", filetypes=[("PDF", "*.pdf")])
         if not revised:
             return
+        manual = messagebox.askyesno("Drawing registration", "Choose matching control points on the first page?\\nYes = rotate/scale/translate page 1 using two point pairs.\\nNo = automatic translation-only alignment.")
+        points = None
+        if manual:
+            try:
+                points=pick_control_points(self,original,revised,scale=1.5)
+            except Exception as exc:
+                messagebox.showerror("Point selection failed",str(exc))
+                return
+            if points is None:
+                return
         target = filedialog.askdirectory(title="Select folder for multi-page comparison images")
         if target:
             try:
-                outputs = compare_document_pages(original, revised, target, side_by_side=True)
+                outputs = compare_document_pages(original, revised, target, side_by_side=True, control_points={0: points} if points else None)
                 messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
