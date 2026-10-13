@@ -1,4 +1,4 @@
-# AER PDF Studio — Community Preview 0.6
+# AER PDF Studio — Community Preview 0.7
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
@@ -9,6 +9,8 @@ Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**,
 - Approximate distance, rectangular area and polygon area takeoffs (m and m²)
 - Measurement register with CSV export and local JSON project save/reopen, including per-page calibrations
 - Multi-page visual difference images with translation-only auto-alignment (same page sizes and counts)
+- Side-by-side drawing comparison images (original next to revised with red-highlighted differences)
+- Two-matching-control-point rotation and uniform-scale registration API (not yet exposed in the desktop GUI)
 - Per-page alignment_report.json recording estimated image offsets
 - Drag a rectangle on a page and save visible red markup into a **new PDF**
 - Reorder, merge, split and rotate PDFs
@@ -27,7 +29,7 @@ py -m venv .venv
 .\.venv\Scripts\python.exe app.py
 ```
 
-Select **Add PDFs**, choose a document, select its row and click **Open Viewer**. Use **Calibrate** mode: drag over a known length and enter its real-world metres. Then select **Distance** or **Area** and drag to measure. Area mode measures an axis-aligned rectangle. For polygon takeoffs select Polygon, click at least three vertices, then Finish Polygon. Choose Export CSV to save recorded measurements. Use Save Project and Open Project to preserve measurements and page calibrations between sessions. Projects are tied to the same local PDF path. Compare Drawings creates PNG difference images for every page for same-size PDFs, with automatic translation-only registration and a JSON offset report. Alignment does not correct rotation, different page scales, cropping or distortion. Inspect comparison images manually; automatic matching is not guaranteed. The calibration is maintained per currently calibrated page; repeat on other pages. In **rectangle** mode, drag and click **Save Rectangle Markup** to save a new PDF. Your source PDF remains unchanged. Measurements are approximate and must be checked against the design dimensions; drawings with different X/Y scaling cannot be accurately measured using the uniform calibration.
+Select **Add PDFs**, choose a document, select its row and click **Open Viewer**. Use **Calibrate** mode: drag over a known length and enter its real-world metres. Then select **Distance** or **Area** and drag to measure. Area mode measures an axis-aligned rectangle. For polygon takeoffs select Polygon, click at least three vertices, then Finish Polygon. Choose Export CSV to save recorded measurements. Use Save Project and Open Project to preserve measurements and page calibrations between sessions. Projects are tied to the same local PDF path. Compare Drawings creates PNG difference images for every page for same-size PDFs, with automatic translation-only registration, side-by-side output and a JSON offset report. Two-point rotation/scale registration is available through the Python API, but is not yet available as an interactive mouse-based UI. Alignment does not correct rotation, different page scales, cropping or distortion. Inspect comparison images manually; automatic matching is not guaranteed. The calibration is maintained per currently calibrated page; repeat on other pages. In **rectangle** mode, drag and click **Save Rectangle Markup** to save a new PDF. Your source PDF remains unchanged. Measurements are approximate and must be checked against the design dimensions; drawings with different X/Y scaling cannot be accurately measured using the uniform calibration.
 
 Tests: `py -m unittest discover -s tests -v`.
 
@@ -35,4 +37,4 @@ Tests: `py -m unittest discover -s tests -v`.
 
 Original project code is MIT licensed. Third-party libraries and their dependencies retain their own licensing and required notices. Review `AUDIT.md`; audit bundled PDFium binary notices before public executable distribution. PDF files can contain malicious content: only use trusted inputs during this prototype stage. This is not a security-hardened PDF editor or an engineering-certified measuring tool.
 
-Roadmap: user-assisted control-point alignment, rotation handling, editable annotation layers, OCR, visual revisions and overlay, and opt-in GPT assistance.
+Roadmap: mouse-driven point picking for registration, editable annotation layers, OCR, visual revisions and overlay, and opt-in GPT assistance.
