@@ -8,7 +8,7 @@ STRINGS = {
  "notfound":"No matching selectable text found.","found":"Found on page {page}",
  "query":"Enter text to find (Arabic or English):","viewer":"PDF viewer",
  "help":"Search supports text-layer PDFs; scanned documents require OCR.",
- "result":"Search result","error":"Error"},
+ "result":"Search result","error":"Error","ocr":"OCR to Text","ocr_choice":"Select OCR language: 1 Arabic, 2 English, 3 Both","ocr_bad_choice":"Enter 1, 2 or 3.","ocr_choose_exe":"Select tesseract.exe (install it first if needed)","ocr_done":"OCR of {pages} pages saved to {file}"},
  "ar":{"add":"إضافة ملفات PDF","open":"فتح العارض","compare":"مقارنة الرسومات",
  "remove":"إزالة","up":"تحريك للأعلى","down":"تحريك للأسفل",
  "merge":"دمج / حفظ","split":"تقسيم الملف المحدد","rotate":"تدوير الملف المحدد",
@@ -18,7 +18,7 @@ STRINGS = {
  "found":"عُثر عليه في الصفحة {page}",
  "query":"أدخل النص للبحث (عربي أو إنجليزي):",
  "viewer":"عارض PDF","help":"البحث في ملفات PDF النصية؛ الملفات الممسوحة تحتاج OCR.",
- "result":"نتيجة البحث","error":"خطأ"}
+ "result":"نتيجة البحث","error":"خطأ","ocr":"استخراج النص OCR","ocr_choice":"اختر اللغة: 1 عربي، 2 إنجليزي، 3 اللغتان","ocr_bad_choice":"أدخل 1 أو 2 أو 3","ocr_choose_exe":"اختر ملف tesseract.exe بعد تثبيت البرنامج","ocr_done":"اكتمل استخراج نص {pages} صفحات وحُفظ في {file}"}
 }
 def tr(language,key,**kwargs):
     data=STRINGS.get(language,STRINGS["en"])
