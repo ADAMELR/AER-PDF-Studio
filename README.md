@@ -1,4 +1,4 @@
-# AER PDF Studio — Community Preview 1.1
+# AER PDF Studio — Community Preview 1.2
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
@@ -7,7 +7,9 @@ Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**,
 - Main toolbar language switch (en / ar); English and Arabic labels on principal commands
 - Search existing PDF text layers for Arabic or English Unicode text from the viewer; jumps to the first matching page
 - Arabic filenames and pre-rendered text can work through the underlying Unicode and PDFium handling, but are not yet independently tested with representative documents
-- No OCR for scanned Arabic PDFs, direct Arabic text editing, embedded Arabic font authoring, text highlighting, or complete RTL layout yet
+- Local OCR to UTF-8 text using a separately installed Tesseract executable with Arabic (ara), English (eng), or both language datasets
+- The OCR button in PDF Viewer saves the extracted text to a .txt file; it does not modify the PDF or make it searchable
+- Direct Arabic PDF text editing, embedded Arabic font authoring, search-result highlighting and complete RTL layout are not implemented yet
 
 ## Features
 
@@ -52,3 +54,13 @@ Roadmap: registration accuracy checks with independent control points, editable 
 ## Alignment check
 
 Pick three corresponding locations on each selected page. The first two define the rotation/scale/translation; the third is held out for validation. A residual at or below 3 raster pixels receives a CHECK label, otherwise REVIEW. This threshold is a preliminary heuristic, not a certified accuracy criterion; all drawing comparisons remain subject to manual review.
+
+## Offline Arabic OCR setup (Windows)
+
+1. Install Tesseract OCR for Windows from a trusted source. Its installation location can be selected through the app if it is not on PATH.
+2. Ensure Arabic language data `ara.traineddata` is installed alongside English `eng.traineddata` in the Tesseract `tessdata` directory.
+3. Open your PDF in AER PDF Studio. Choose **OCR to Text / استخراج النص OCR**.
+4. Select **1 Arabic**, **2 English** or **3 Both**. Choose a destination .txt file.
+5. The tool renders pages locally and uses Tesseract without uploading files. Long documents may take time.
+
+**Limitations:** Tesseract is an external prerequisite, not bundled with the Windows EXE. Mixed-direction layout, Arabic diacritics, tables, and handwriting may not be recovered accurately; validate extracted text against the original. This release only exports plain text, not searchable PDF layers. OCR reads the entire PDF and has a maximum raster page size of 25 megapixels.
