@@ -88,7 +88,7 @@ class App(tk.Tk):
         if target:
             try:
                 outputs = compare_document_pages(original, revised, target, side_by_side=True, control_points=points if points else None)
-                messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json to:\\n" + target)
+                messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json and drawing_revision_register.csv to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
 
