@@ -16,10 +16,10 @@ class PointPicker(tk.Toplevel):
         self.result=None
         self.points=[[],[]]
         self.photos=[]
-        ttk.Label(self,text="Choose two DISTINCT reference points on ORIGINAL, then the corresponding two points on REVISED. Use identifiable corners or grid intersections.",wraplength=1000).pack(padx=8,pady=8)
+        ttk.Label(self,text="Choose three DISTINCT reference points on ORIGINAL, then the corresponding two points on REVISED. Use identifiable corners or grid intersections. Points 1 and 2 define alignment; point 3 independently checks accuracy.",wraplength=1000).pack(padx=8,pady=8)
         bar=ttk.Frame(self)
         bar.pack(fill="x")
-        self.status=ttk.Label(bar,text="Original: 0/2    Revised: 0/2")
+        self.status=ttk.Label(bar,text="Original: 0/3    Revised: 0/3")
         self.status.pack(side="left",padx=8)
         ttk.Button(bar,text="Reset points",command=self.reset).pack(side="right",padx=5)
         ttk.Button(bar,text="Use these points",command=self.accept).pack(side="right",padx=5)
@@ -53,7 +53,7 @@ class PointPicker(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW",self.cancel)
 
     def pick(self,index,event):
-        if len(self.points[index])>=2:
+        if len(self.points[index])>=3:
             return
         canvas=self.canvases[index]
         x,y=canvas.canvasx(event.x),canvas.canvasy(event.y)
@@ -64,7 +64,7 @@ class PointPicker(tk.Toplevel):
         n=len(self.points[index])
         canvas.create_oval(x-5,y-5,x+5,y+5,outline="red",width=2,tags="picked")
         canvas.create_text(x+12,y-12,text=str(n),fill="red",tags="picked")
-        self.status.config(text=f"Original: {len(self.points[0])}/2    Revised: {len(self.points[1])}/2")
+        self.status.config(text=f"Original: {len(self.points[0])}/3    Revised: {len(self.points[1])}/3")
 
     def reset(self):
         self.points=[[],[]]
@@ -73,8 +73,8 @@ class PointPicker(tk.Toplevel):
         self.status.config(text="Original: 0/2    Revised: 0/2")
 
     def accept(self):
-        if any(len(points)!=2 for points in self.points):
-            messagebox.showwarning("Incomplete", "Select two points on EACH drawing.",parent=self)
+        if any(len(points)!=3 for points in self.points):
+            messagebox.showwarning("Incomplete", "Select three points on EACH drawing.",parent=self)
             return
         self.result=(self.points[0],self.points[1])
         self.destroy()
