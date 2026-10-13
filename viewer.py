@@ -7,6 +7,7 @@ from PIL import ImageTk
 
 from annotations import add_rectangle_markup
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
+from takeoff import Measurement, polygon_area_m2, export_register_csv
 
 
 class PDFViewer(tk.Toplevel):
@@ -21,6 +22,8 @@ class PDFViewer(tk.Toplevel):
         self.selection = None
         self.calibration = None
         self.calibration_page = None
+        self.register = []
+        self.polygon_vertices = []
         self.mode = tk.StringVar(value="rectangle")
         self.measure_text = tk.StringVar(value="Calibrate using a known drawing dimension.")
         self.title("AER PDF Studio — " + source)
@@ -32,8 +35,10 @@ class PDFViewer(tk.Toplevel):
         ttk.Button(toolbar, text="Next", command=lambda: self.step(1)).pack(side="left")
         ttk.Button(toolbar, text="Zoom −", command=lambda: self.set_zoom(self.zoom / 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Zoom +", command=lambda: self.set_zoom(self.zoom * 1.25)).pack(side="left")
-        ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=12)
-        ttk.Combobox(toolbar, textvariable=self.mode, values=["rectangle","calibrate","distance","area"], state="readonly", width=12).pack(side="left", padx=4)
+        ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=5)
+        ttk.Button(toolbar, text="Finish Polygon", command=self.finish_polygon).pack(side="left")
+        ttk.Button(toolbar, text="Export CSV", command=self.export_register).pack(side="left")
+        ttk.Combobox(toolbar, textvariable=self.mode, values=["rectangle","calibrate","distance","area","polygon"], state="readonly", width=12).pack(side="left", padx=4)
         self.status = ttk.Label(toolbar, text="")
         self.status.pack(side="right")
         ttk.Label(self, text="Choose Calibrate and drag along a known dimension; enter metres. Then use Distance or Area.", padding=(8, 0)).pack(anchor="w")
@@ -67,6 +72,7 @@ class PDFViewer(tk.Toplevel):
     def render(self):
         self.selection = None
         self.drag_start = None
+        self.polygon_vertices = []
         self.canvas.delete("all")
         page = self.doc[self.page_index]
         bitmap = page.render(scale=self.zoom)
@@ -80,6 +86,17 @@ class PDFViewer(tk.Toplevel):
         return self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
 
     def start_drag(self, event):
+        if self.mode.get() == "polygon":
+            if self.calibration is None or self.calibration_page != self.page_index:
+                messagebox.showerror("Calibration required", "Calibrate the current page first.", parent=self)
+                return
+            point = self.coords(event)
+            self.polygon_vertices.append(point)
+            if len(self.polygon_vertices) > 1:
+                x0,y0 = self.polygon_vertices[-2]
+                x1,y1 = point
+                self.canvas.create_line(x0,y0,x1,y1,fill="blue",width=3,tags="polygon")
+            return
         self.drag_start = self.coords(event)
         self.selection = None
         self.canvas.delete("mark")
@@ -125,13 +142,41 @@ class PDFViewer(tk.Toplevel):
                     raise ValueError("Calibrate this page using a known dimension first.")
                 if mode == "distance":
                     value = length_metres(a,b,self.calibration)
+                    self.register.append(Measurement(self.page_index+1,"Distance",value,"m"))
                     self.measure_text.set(f"Approximate measured distance: {value:.3f} m")
                 elif mode == "area":
                     rect = (min(a[0],b[0]), min(a[1],b[1]), max(a[0],b[0]), max(a[1],b[1]))
                     value = rectangle_area_m2(rect,self.calibration)
+                    self.register.append(Measurement(self.page_index+1,"Rectangle",value,"m2"))
                     self.measure_text.set(f"Approximate rectangular area: {value:.3f} m²")
         except (ValueError, TypeError) as exc:
             messagebox.showerror("Measurement error", str(exc), parent=self)
+
+    def finish_polygon(self):
+        if len(self.polygon_vertices) < 3:
+            messagebox.showinfo("Polygon", "Click at least three points in polygon mode.", parent=self)
+            return
+        try:
+            _, height = self.doc[self.page_index].get_size()
+            points = [screen_to_pdf(v,self.zoom,height) for v in self.polygon_vertices]
+            value = polygon_area_m2(points,self.calibration)
+            self.register.append(Measurement(self.page_index+1,"Polygon",value,"m2"))
+            self.measure_text.set(f"Approximate polygon area: {value:.3f} m²; register entries: {len(self.register)}")
+            self.polygon_vertices=[]
+        except (ValueError,TypeError) as exc:
+            messagebox.showerror("Polygon error",str(exc),parent=self)
+
+    def export_register(self):
+        if not self.register:
+            messagebox.showinfo("No measurements", "Measure an area or length first.", parent=self)
+            return
+        target = filedialog.asksaveasfilename(parent=self,defaultextension=".csv",filetypes=[("CSV spreadsheet","*.csv")])
+        if target:
+            try:
+                export_register_csv(self.register,target)
+                messagebox.showinfo("Export complete",target,parent=self)
+            except Exception as exc:
+                messagebox.showerror("Export error",str(exc),parent=self)
 
     def save_markup(self):
         if self.mode.get() != "rectangle":
