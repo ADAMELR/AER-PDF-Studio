@@ -8,11 +8,15 @@
 
 **[User Wiki](docs/wiki/Home.md)** · **[Download releases](https://github.com/ADAMELR/AER-PDF-Studio/releases)** · **[Features](#features)** · **[Getting started](#getting-started)** · **[Report a bug](https://github.com/ADAMELR/AER-PDF-Studio/issues/new/choose)**
 
-> **Community Preview v1.4 — not a certified engineering, document-control or PDF-signing product.**
+> **Community Preview v1.5 — not a certified engineering, document-control or PDF-signing product.**
 > Release downloads will appear under **Releases** once a reviewed release is published.
 > Until then, successful builds can be downloaded from [GitHub Actions](https://github.com/ADAMELR/AER-PDF-Studio/actions) (sign-in may be required).
 
 AER PDF Studio is a locally running Python/Tkinter desktop application. It is designed for engineers, designers, construction teams, and anyone managing PDF drawings and bilingual documents. PDFs are processed locally; the project does not contain cloud upload functionality.
+
+## Redesigned desktop interface (v1.5)
+
+The Windows UI now uses a contemporary, Office-inspired ribbon and an Acrobat-style document workspace (original visual styling; no Microsoft or Adobe logos/assets). The main window has a dark header, left navigation rail, Home / Drawings / Organise tabs, a searchable-looking but **not yet filterable** document list, double-click to open a PDF, and a simplified footer. The viewer has separate View, Measure, Markup and OCR tabs, avoiding the previous overcrowded toolbar. All original PDF processing features remain available. The redesign has automated Python tests but still requires practical review on Windows at different DPI and screen sizes.
 
 ## Features
 
@@ -85,6 +89,7 @@ GitHub Actions runs tests on Windows and Ubuntu with Python 3.11 and 3.13, and b
 ## Roadmap
 
 - [ ] Verified screenshots, short demo, and user-tested portable Windows distribution
+- [ ] High-DPI and keyboard accessibility checks for the new ribbon interface
 - [ ] Better RTL handling and full Arabic translations throughout the viewer
 - [ ] OCR placement/quality validation on real-world Arabic documents and architectural/civil drawings
 - [ ] Editable annotation objects and more robust page geometry support
