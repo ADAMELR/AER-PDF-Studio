@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox, ttk
 from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from viewer import PDFViewer
+from compare import compare_pages
 
 class App(tk.Tk):
     def __init__(self):
@@ -13,7 +14,7 @@ class App(tk.Tk):
         bar = ttk.Frame(self, padding=10)
         bar.pack(fill="x")
         for label, fn in [
-            ("Add PDFs", self.add), ("Open Viewer", self.open_viewer), ("Remove", self.remove),
+            ("Add PDFs", self.add), ("Open Viewer", self.open_viewer), ("Compare Drawings", self.compare_drawings), ("Remove", self.remove),
             ("Move Up", lambda: self.move(-1)), ("Move Down", lambda: self.move(1)),
             ("Merge / Save", self.merge), ("Split Selected", self.split),
             ("Rotate Selected", self.rotate)
@@ -53,6 +54,21 @@ class App(tk.Tk):
                 PDFViewer(self, self.files[index])
             except Exception as exc:
                 messagebox.showerror("Preview failed", str(exc))
+
+    def compare_drawings(self):
+        original = filedialog.askopenfilename(title="Select original drawing PDF", filetypes=[("PDF", "*.pdf")])
+        if not original:
+            return
+        revised = filedialog.askopenfilename(title="Select revised drawing PDF", filetypes=[("PDF", "*.pdf")])
+        if not revised:
+            return
+        target = filedialog.asksaveasfilename(title="Save comparison image", defaultextension=".png", filetypes=[("PNG", "*.png")])
+        if target:
+            try:
+                compare_pages(original, revised, target)
+                messagebox.showinfo("Comparison saved", "Page 1 visual difference saved to:\\n" + target)
+            except Exception as exc:
+                messagebox.showerror("Comparison failed", str(exc))
 
     def remove(self):
         index = self.selected()
