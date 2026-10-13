@@ -6,12 +6,13 @@ from PIL import ImageTk
 
 class PointPicker(tk.Toplevel):
     """Pick two corresponding points on each image, in raster pixel coordinates."""
-    def __init__(self, parent, original, revised, scale=1.5):
+    def __init__(self, parent, original, revised, scale=1.5, page_index=0):
         super().__init__(parent)
-        self.title("Register drawings — two matching points")
+        self.title(f"Register drawings — page {page_index + 1}")
         self.geometry("1180x750")
         self.transient(parent)
         self.scale=scale
+        self.page_index=page_index
         self.result=None
         self.points=[[],[]]
         self.photos=[]
@@ -38,9 +39,9 @@ class PointPicker(tk.Toplevel):
             sx.pack(side="bottom",fill="x")
             doc=pdfium.PdfDocument(path)
             try:
-                if not len(doc):
-                    raise ValueError("PDF has no pages")
-                photo=ImageTk.PhotoImage(doc[0].render(scale=scale).to_pil().convert("RGB"))
+                if page_index < 0 or page_index >= len(doc):
+                    raise ValueError("Selected page is outside PDF")
+                photo=ImageTk.PhotoImage(doc[page_index].render(scale=scale).to_pil().convert("RGB"))
             finally:
                 doc.close()
             self.photos.append(photo)
@@ -82,7 +83,7 @@ class PointPicker(tk.Toplevel):
         self.result=None
         self.destroy()
 
-def pick_control_points(parent,original,revised,scale=1.5):
-    dialog=PointPicker(parent,original,revised,scale)
+def pick_control_points(parent,original,revised,scale=1.5,page_index=0):
+    dialog=PointPicker(parent,original,revised,scale,page_index=page_index)
     parent.wait_window(dialog)
     return dialog.result
