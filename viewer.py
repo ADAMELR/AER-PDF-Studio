@@ -14,6 +14,7 @@ from pdf_text_search import find_text_pages
 from arabic_ocr import ocr_pdf_pages, OCRSetupError, LANGUAGES
 from searchable_ocr import make_searchable_pdf
 from vector_ocr import make_vector_searchable_pdf
+from ui_theme import apply_theme, NAVY, LIGHT, WHITE, MUTED
 
 
 class PDFViewer(tk.Toplevel):
@@ -35,32 +36,84 @@ class PDFViewer(tk.Toplevel):
         self.mode = tk.StringVar(value="rectangle")
         self.measure_text = tk.StringVar(value="Calibrate using a known drawing dimension.")
         self.title("AER PDF Studio — " + source)
-        self.geometry("1000x760")
+        self.geometry("1400x880")
+        self.minsize(970, 620)
+        apply_theme(self)
 
-        toolbar = ttk.Frame(self, padding=8)
-        toolbar.pack(fill="x")
-        ttk.Button(toolbar, text=tr(language,"prev"), command=lambda: self.step(-1)).pack(side="left")
-        ttk.Button(toolbar, text=tr(language,"next"), command=lambda: self.step(1)).pack(side="left")
-        ttk.Button(toolbar, text=tr(language,"search"), command=self.search_pdf).pack(side="left")
-        ttk.Button(toolbar, text=tr(language,"ocr"), command=self.run_ocr).pack(side="left")
-        ttk.Button(toolbar, text=tr(language,"searchable_pdf"), command=self.export_searchable_pdf).pack(side="left")
-        ttk.Button(toolbar, text=tr(language,"vector_pdf"), command=self.export_vector_searchable_pdf).pack(side="left")
-        ttk.Button(toolbar, text="Zoom −", command=lambda: self.set_zoom(self.zoom / 1.25)).pack(side="left")
-        ttk.Button(toolbar, text="Zoom +", command=lambda: self.set_zoom(self.zoom * 1.25)).pack(side="left")
-        ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=5)
-        ttk.Button(toolbar, text="Finish Polygon", command=self.finish_polygon).pack(side="left")
-        ttk.Button(toolbar, text="Export CSV", command=self.export_register).pack(side="left")
-        ttk.Button(toolbar, text="Save Project", command=self.save_project).pack(side="left")
-        ttk.Button(toolbar, text="Open Project", command=self.open_project).pack(side="left")
-        ttk.Combobox(toolbar, textvariable=self.mode, values=["rectangle","calibrate","distance","area","polygon"], state="readonly", width=12).pack(side="left", padx=4)
-        self.status = ttk.Label(toolbar, text="")
+        header = tk.Frame(self, bg=NAVY, height=54)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        tk.Label(header, text="  AER  PDF STUDIO  /  DOCUMENT VIEWER",
+                 bg=NAVY, fg=WHITE,
+                 font=("Segoe UI Semibold", 13)).pack(side="left", padx=16)
+        tk.Label(header, text=source.rsplit("/", 1)[-1].rsplit(chr(92), 1)[-1],
+                 bg=NAVY, fg="#C0D0E0", font=("Segoe UI", 10)).pack(
+                     side="right", padx=22)
+
+        tabs = ttk.Notebook(self)
+        tabs.pack(fill="x")
+        home_tab = ttk.Frame(tabs, style="Ribbon.TFrame")
+        measure_tab = ttk.Frame(tabs, style="Ribbon.TFrame")
+        annotate_tab = ttk.Frame(tabs, style="Ribbon.TFrame")
+        ocr_tab = ttk.Frame(tabs, style="Ribbon.TFrame")
+        tabs.add(home_tab, text="View / عرض")
+        tabs.add(measure_tab, text="Measure / قياس")
+        tabs.add(annotate_tab, text="Markup / تعليم")
+        tabs.add(ocr_tab, text="OCR / النصوص")
+
+        for label, command in (
+            (tr(language, "prev"), lambda: self.step(-1)),
+            (tr(language, "next"), lambda: self.step(1)),
+            ("Zoom −", lambda: self.set_zoom(self.zoom / 1.25)),
+            ("Zoom +", lambda: self.set_zoom(self.zoom * 1.25)),
+            (tr(language, "search"), self.search_pdf),
+        ):
+            ttk.Button(home_tab, text=label, command=command).pack(
+                side="left", padx=5, pady=9)
+
+        ttk.Label(measure_tab, text="Measurement tool:", style="Surface.TLabel").pack(
+            side="left", padx=(14, 7))
+        self.tool_selector = ttk.Combobox(measure_tab, textvariable=self.mode,
+            values=["rectangle", "calibrate", "distance", "area", "polygon"],
+            state="readonly", width=15)
+        self.tool_selector.pack(side="left", padx=5, pady=9)
+        for label, command in (
+            ("Finish Polygon", self.finish_polygon),
+            ("Export Measurements CSV", self.export_register),
+            ("Save Project", self.save_project),
+            ("Open Project", self.open_project),
+        ):
+            ttk.Button(measure_tab, text=label, command=command).pack(
+                side="left", padx=5, pady=9)
+
+        ttk.Button(annotate_tab, text="Save Rectangle Markup",
+                   style="Accent.TButton", command=self.save_markup).pack(
+                       side="left", padx=14, pady=9)
+        ttk.Label(annotate_tab, text="Choose rectangle in the Measure tab, then drag over the page.",
+                  style="Surface.TLabel").pack(side="left", padx=7)
+
+        for label, command in (
+            (tr(language, "ocr"), self.run_ocr),
+            (tr(language, "searchable_pdf"), self.export_searchable_pdf),
+            (tr(language, "vector_pdf"), self.export_vector_searchable_pdf),
+        ):
+            ttk.Button(ocr_tab, text=label, command=command).pack(
+                side="left", padx=6, pady=9)
+
+        ttk.Label(self, text="PAGE WORKSPACE", style="Section.TLabel",
+                  padding=(18, 10)).pack(anchor="w")
+        ttk.Label(self, text="Calibrate using a known length, then measure. Use the ribbon for search, markup and OCR.",
+                  style="Muted.TLabel", padding=(18, 0)).pack(anchor="w")
+        self.measurement_banner = ttk.Frame(self, padding=(18, 8))
+        self.measurement_banner.pack(fill="x")
+        ttk.Label(self.measurement_banner, textvariable=self.measure_text,
+                  style="Section.TLabel").pack(side="left")
+        self.status = ttk.Label(self.measurement_banner, text="", style="Muted.TLabel")
         self.status.pack(side="right")
-        ttk.Label(self, text="Choose Calibrate and drag along a known dimension; enter metres. Then use Distance or Area.", padding=(8, 0)).pack(anchor="w")
-        ttk.Label(self, textvariable=self.measure_text, padding=(8, 2)).pack(anchor="w")
 
-        frame = ttk.Frame(self)
+        frame = ttk.Frame(self, padding=(14, 8, 14, 12))
         frame.pack(fill="both", expand=True)
-        self.canvas = tk.Canvas(frame, background="#555555", highlightthickness=0)
+        self.canvas = tk.Canvas(frame, background="#C5CDD7", highlightthickness=0)
         vs = ttk.Scrollbar(frame, orient="vertical", command=self.canvas.yview)
         hs = ttk.Scrollbar(frame, orient="horizontal", command=self.canvas.xview)
         self.canvas.configure(xscrollcommand=hs.set, yscrollcommand=vs.set)
