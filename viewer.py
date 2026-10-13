@@ -11,6 +11,7 @@ from takeoff import Measurement, polygon_area_m2, export_register_csv
 from project_store import save_project, load_project
 from localization import tr
 from pdf_text_search import find_text_pages
+from arabic_ocr import ocr_pdf_pages, OCRSetupError, LANGUAGES
 
 
 class PDFViewer(tk.Toplevel):
@@ -39,6 +40,7 @@ class PDFViewer(tk.Toplevel):
         ttk.Button(toolbar, text=tr(language,"prev"), command=lambda: self.step(-1)).pack(side="left")
         ttk.Button(toolbar, text=tr(language,"next"), command=lambda: self.step(1)).pack(side="left")
         ttk.Button(toolbar, text=tr(language,"search"), command=self.search_pdf).pack(side="left")
+        ttk.Button(toolbar, text=tr(language,"ocr"), command=self.run_ocr).pack(side="left")
         ttk.Button(toolbar, text="Zoom −", command=lambda: self.set_zoom(self.zoom / 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Zoom +", command=lambda: self.set_zoom(self.zoom * 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=5)
@@ -84,6 +86,41 @@ class PDFViewer(tk.Toplevel):
             messagebox.showinfo(tr(self.language,"result"),tr(self.language,"found",page=self.page_index+1),parent=self)
         except Exception as exc:
             messagebox.showerror(tr(self.language,"error"),str(exc),parent=self)
+
+    def run_ocr(self):
+        from tkinter import simpledialog
+        options = {"1": "ara", "2": "eng", "3": "ara+eng"}
+        option = simpledialog.askstring(
+            tr(self.language, "ocr"), tr(self.language, "ocr_choice"),
+            initialvalue="3", parent=self)
+        if option is None:
+            return
+        language = options.get(option.strip())
+        if not language:
+            messagebox.showerror(tr(self.language,"error"),tr(self.language,"ocr_bad_choice"),parent=self)
+            return
+        destination = filedialog.asksaveasfilename(parent=self, defaultextension=".txt",
+            filetypes=[("UTF-8 text","*.txt")])
+        if not destination:
+            return
+        try:
+            result = ocr_pdf_pages(self.source, destination, language=language)
+        except OCRSetupError:
+            executable = filedialog.askopenfilename(
+                parent=self,title=tr(self.language,"ocr_choose_exe"),
+                filetypes=[("Programs","*.exe"),("All files","*.*")])
+            if not executable:
+                return
+            try:
+                result = ocr_pdf_pages(self.source,destination,language=language,executable=executable)
+            except Exception as exc:
+                messagebox.showerror(tr(self.language,"error"),str(exc),parent=self)
+                return
+        except Exception as exc:
+            messagebox.showerror(tr(self.language,"error"),str(exc),parent=self)
+            return
+        messagebox.showinfo(tr(self.language,"ocr"),
+            tr(self.language,"ocr_done",pages=result["pages"],file=result["output"]),parent=self)
 
     def set_zoom(self, zoom):
         self.zoom = max(0.4, min(4, zoom))
