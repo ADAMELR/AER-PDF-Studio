@@ -6,6 +6,7 @@ import pypdfium2 as pdfium
 from PIL import ImageTk
 
 from annotations import add_rectangle_markup
+from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
 
 
 class PDFViewer(tk.Toplevel):
@@ -18,6 +19,10 @@ class PDFViewer(tk.Toplevel):
         self.photo = None
         self.drag_start = None
         self.selection = None
+        self.calibration = None
+        self.calibration_page = None
+        self.mode = tk.StringVar(value="rectangle")
+        self.measure_text = tk.StringVar(value="Calibrate using a known drawing dimension.")
         self.title("AER PDF Studio — " + source)
         self.geometry("1000x760")
 
@@ -28,9 +33,11 @@ class PDFViewer(tk.Toplevel):
         ttk.Button(toolbar, text="Zoom −", command=lambda: self.set_zoom(self.zoom / 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Zoom +", command=lambda: self.set_zoom(self.zoom * 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=12)
+        ttk.Combobox(toolbar, textvariable=self.mode, values=["rectangle","calibrate","distance","area"], state="readonly", width=12).pack(side="left", padx=4)
         self.status = ttk.Label(toolbar, text="")
         self.status.pack(side="right")
-        ttk.Label(self, text="Drag on the page to draw a red rectangle. Save creates a NEW PDF.", padding=(8, 0)).pack(anchor="w")
+        ttk.Label(self, text="Choose Calibrate and drag along a known dimension; enter metres. Then use Distance or Area.", padding=(8, 0)).pack(anchor="w")
+        ttk.Label(self, textvariable=self.measure_text, padding=(8, 2)).pack(anchor="w")
 
         frame = ttk.Frame(self)
         frame.pack(fill="both", expand=True)
@@ -83,7 +90,10 @@ class PDFViewer(tk.Toplevel):
         x0, y0 = self.drag_start
         x1, y1 = self.coords(event)
         self.canvas.delete("mark")
-        self.canvas.create_rectangle(x0, y0, x1, y1, outline="red", width=3, tags="mark")
+        if self.mode.get() in ("calibrate", "distance"):
+            self.canvas.create_line(x0, y0, x1, y1, fill="red", width=3, tags="mark")
+        else:
+            self.canvas.create_rectangle(x0, y0, x1, y1, outline="red", width=3, tags="mark")
 
     def finish_drag(self, event):
         if self.drag_start is None:
@@ -92,8 +102,41 @@ class PDFViewer(tk.Toplevel):
         x1, y1 = self.coords(event)
         self.selection = (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
         self.drag_start = None
+        if self.mode.get() != "rectangle":
+            self.process_measurement((x0,y0),(x1,y1))
+
+    def process_measurement(self, start, end):
+        from tkinter import simpledialog
+        page = self.doc[self.page_index]
+        _, height = page.get_size()
+        a = screen_to_pdf(start, self.zoom, height)
+        b = screen_to_pdf(end, self.zoom, height)
+        mode = self.mode.get()
+        try:
+            if mode == "calibrate":
+                known = simpledialog.askfloat("Calibrate drawing", "Known dimension in metres:", parent=self, minvalue=0.000001)
+                if known is None:
+                    return
+                self.calibration = calibrate(a, b, known)
+                self.calibration_page = self.page_index
+                self.measure_text.set(f"Page {self.page_index+1} calibration: {self.calibration.metres_per_point:.8f} metres / PDF point")
+            else:
+                if self.calibration is None or self.calibration_page != self.page_index:
+                    raise ValueError("Calibrate this page using a known dimension first.")
+                if mode == "distance":
+                    value = length_metres(a,b,self.calibration)
+                    self.measure_text.set(f"Approximate measured distance: {value:.3f} m")
+                elif mode == "area":
+                    rect = (min(a[0],b[0]), min(a[1],b[1]), max(a[0],b[0]), max(a[1],b[1]))
+                    value = rectangle_area_m2(rect,self.calibration)
+                    self.measure_text.set(f"Approximate rectangular area: {value:.3f} m²")
+        except (ValueError, TypeError) as exc:
+            messagebox.showerror("Measurement error", str(exc), parent=self)
 
     def save_markup(self):
+        if self.mode.get() != "rectangle":
+            messagebox.showinfo("Choose rectangle", "Choose rectangle mode to save visible markups.", parent=self)
+            return
         if not self.selection:
             messagebox.showinfo("Select an area", "Draw a rectangle on the page first.", parent=self)
             return
