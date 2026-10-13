@@ -4,7 +4,7 @@ from pathlib import Path
 import pypdfium2 as pdfium
 from compare import compare_pages
 
-def compare_document_pages(original, revised, output_folder, scale=1.5, auto_align=True):
+def compare_document_pages(original, revised, output_folder, scale=1.5, auto_align=True, control_points=None, side_by_side=False):
     a=pdfium.PdfDocument(str(original))
     b=pdfium.PdfDocument(str(revised))
     try:
@@ -20,11 +20,12 @@ def compare_document_pages(original, revised, output_folder, scale=1.5, auto_ali
     output.mkdir(parents=True,exist_ok=True)
     results=[]
     manifest={"original":str(Path(original).resolve()),"revised":str(Path(revised).resolve()),
-              "scale":scale,"auto_align":auto_align,"pages":[]}
+              "scale":scale,"auto_align":auto_align,"side_by_side":side_by_side,"pages":[]}
     for page in range(count_a):
         destination=output/f"comparison_page_{page+1:03d}.png"
         result,info=compare_pages(original,revised,destination,page_index=page,scale=scale,
-                                  auto_align=auto_align,return_alignment=True)
+                                  auto_align=auto_align,return_alignment=True,
+                                  control_points=control_points,side_by_side=side_by_side)
         results.append(result)
         manifest["pages"].append({"page":page+1,"output":result.name,**info})
     (output/"alignment_report.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
