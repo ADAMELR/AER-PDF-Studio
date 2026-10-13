@@ -9,12 +9,15 @@ from annotations import add_rectangle_markup
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
 from takeoff import Measurement, polygon_area_m2, export_register_csv
 from project_store import save_project, load_project
+from localization import tr
+from pdf_text_search import find_text_pages
 
 
 class PDFViewer(tk.Toplevel):
-    def __init__(self, parent, source):
+    def __init__(self, parent, source, language="en"):
         super().__init__(parent)
         self.source = source
+        self.language=language
         self.doc = pdfium.PdfDocument(source)
         self.page_index = 0
         self.zoom = 1.25
@@ -33,8 +36,9 @@ class PDFViewer(tk.Toplevel):
 
         toolbar = ttk.Frame(self, padding=8)
         toolbar.pack(fill="x")
-        ttk.Button(toolbar, text="Previous", command=lambda: self.step(-1)).pack(side="left")
-        ttk.Button(toolbar, text="Next", command=lambda: self.step(1)).pack(side="left")
+        ttk.Button(toolbar, text=tr(language,"prev"), command=lambda: self.step(-1)).pack(side="left")
+        ttk.Button(toolbar, text=tr(language,"next"), command=lambda: self.step(1)).pack(side="left")
+        ttk.Button(toolbar, text=tr(language,"search"), command=self.search_pdf).pack(side="left")
         ttk.Button(toolbar, text="Zoom −", command=lambda: self.set_zoom(self.zoom / 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Zoom +", command=lambda: self.set_zoom(self.zoom * 1.25)).pack(side="left")
         ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=5)
@@ -64,6 +68,22 @@ class PDFViewer(tk.Toplevel):
         self.canvas.bind("<ButtonRelease-1>", self.finish_drag)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.render()
+
+    def search_pdf(self):
+        from tkinter import simpledialog
+        phrase=simpledialog.askstring(tr(self.language,"search"),tr(self.language,"query"),parent=self)
+        if phrase is None:
+            return
+        try:
+            matching=find_text_pages(self.source,phrase)
+            if not matching:
+                messagebox.showinfo(tr(self.language,"result"),tr(self.language,"notfound"),parent=self)
+                return
+            self.page_index=matching[0]
+            self.render()
+            messagebox.showinfo(tr(self.language,"result"),tr(self.language,"found",page=self.page_index+1),parent=self)
+        except Exception as exc:
+            messagebox.showerror(tr(self.language,"error"),str(exc),parent=self)
 
     def set_zoom(self, zoom):
         self.zoom = max(0.4, min(4, zoom))
