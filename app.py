@@ -13,7 +13,7 @@ from ui_theme import apply_theme, NAVY, BLUE, WHITE, MUTED
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 1.5")
+        self.title("AER PDF Studio — Community Preview 1.6")
         self.geometry("1320x830")
         self.minsize(980, 620)
         apply_theme(self)
