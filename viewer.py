@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox, ttk
 
 import pypdfium2 as pdfium
 from PIL import ImageTk
+from thumbnails import make_thumbnail, visible_thumbnail_indices
 
 from annotations import add_rectangle_markup
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
@@ -26,6 +27,9 @@ class PDFViewer(tk.Toplevel):
         self.page_index = 0
         self.zoom = 1.25
         self.photo = None
+        self.thumbnail_photos = []
+        self.show_thumbnails = True
+        self.show_tools = True
         self.drag_start = None
         self.selection = None
         self.calibration = None
@@ -66,6 +70,8 @@ class PDFViewer(tk.Toplevel):
             (tr(language, "next"), lambda: self.step(1)),
             ("Zoom −", lambda: self.set_zoom(self.zoom / 1.25)),
             ("Zoom +", lambda: self.set_zoom(self.zoom * 1.25)),
+            ("Thumbnails", self.toggle_thumbnails),
+            ("Tools panel", self.toggle_tools),
             (tr(language, "search"), self.search_pdf),
         ):
             ttk.Button(home_tab, text=label, command=command).pack(
@@ -111,8 +117,36 @@ class PDFViewer(tk.Toplevel):
         self.status = ttk.Label(self.measurement_banner, text="", style="Muted.TLabel")
         self.status.pack(side="right")
 
-        frame = ttk.Frame(self, padding=(14, 8, 14, 12))
-        frame.pack(fill="both", expand=True)
+        self.content_frame = ttk.Frame(self, padding=(8, 8, 8, 10))
+        self.content_frame.pack(fill="both", expand=True)
+        self.thumb_panel = ttk.Frame(self.content_frame, width=180)
+        self.thumb_panel.pack(side="left", fill="y", padx=(0, 8))
+        self.thumb_panel.pack_propagate(False)
+        ttk.Label(self.thumb_panel, text="PAGE THUMBNAILS", style="Section.TLabel").pack(anchor="w", padx=8, pady=8)
+        self.thumbnail_canvas = tk.Canvas(self.thumb_panel, background="#E9EEF4", highlightthickness=0, width=166)
+        self.thumbnail_scroll = ttk.Scrollbar(self.thumb_panel, orient="vertical", command=self.thumbnail_canvas.yview)
+        self.thumbnail_canvas.configure(yscrollcommand=self.thumbnail_scroll.set)
+        self.thumbnail_canvas.pack(side="left", fill="both", expand=True)
+        self.thumbnail_scroll.pack(side="right", fill="y")
+
+        self.tools_panel = ttk.Frame(self.content_frame, width=185)
+        self.tools_panel.pack(side="right", fill="y", padx=(8, 0))
+        self.tools_panel.pack_propagate(False)
+        ttk.Label(self.tools_panel, text="QUICK TOOLS", style="Section.TLabel").pack(anchor="w", padx=8, pady=(12, 14))
+        for label, callback in (
+            ("Select rectangle", lambda: self.mode.set("rectangle")),
+            ("Calibrate", lambda: self.mode.set("calibrate")),
+            ("Measure length", lambda: self.mode.set("distance")),
+            ("Measure area", lambda: self.mode.set("area")),
+            ("Polygon area", lambda: self.mode.set("polygon")),
+            ("Finish polygon", self.finish_polygon),
+            ("Export CSV", self.export_register),
+            ("Search text", self.search_pdf),
+        ):
+            ttk.Button(self.tools_panel, text=label, command=callback).pack(fill="x", padx=8, pady=3)
+
+        frame = ttk.Frame(self.content_frame)
+        frame.pack(side="left", fill="both", expand=True)
         self.canvas = tk.Canvas(frame, background="#C5CDD7", highlightthickness=0)
         vs = ttk.Scrollbar(frame, orient="vertical", command=self.canvas.yview)
         hs = ttk.Scrollbar(frame, orient="horizontal", command=self.canvas.xview)
@@ -125,8 +159,63 @@ class PDFViewer(tk.Toplevel):
         self.canvas.bind("<ButtonPress-1>", self.start_drag)
         self.canvas.bind("<B1-Motion>", self.drag)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drag)
+        self.bind("<Control-f>", lambda _event: self.search_pdf())
+        self.bind("<Prior>", lambda _event: self.step(-1))
+        self.bind("<Next>", lambda _event: self.step(1))
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.render()
+
+    def toggle_thumbnails(self):
+        self.show_thumbnails = not self.show_thumbnails
+        if self.show_thumbnails:
+            self.thumb_panel.pack(side="left", fill="y", padx=(0, 8), before=self.canvas.master)
+            self.refresh_thumbnails()
+        else:
+            self.thumb_panel.pack_forget()
+
+    def toggle_tools(self):
+        self.show_tools = not self.show_tools
+        if self.show_tools:
+            self.tools_panel.pack(side="right", fill="y", padx=(8, 0))
+        else:
+            self.tools_panel.pack_forget()
+
+    def show_page(self, index):
+        if 0 <= index < len(self.doc):
+            self.page_index = index
+            self.render()
+
+    def refresh_thumbnails(self):
+        if not self.show_thumbnails:
+            return
+        canvas = self.thumbnail_canvas
+        canvas.delete("all")
+        self.thumbnail_photos = []
+        y = 12
+        for index in visible_thumbnail_indices(self.page_index, len(self.doc), radius=3):
+            page = self.doc[index]
+            try:
+                image = make_thumbnail(page)
+            finally:
+                page.close()
+            photo = ImageTk.PhotoImage(image)
+            self.thumbnail_photos.append(photo)
+            x = (164 - image.width) // 2
+            canvas.create_rectangle(4, y-5, 160, y+image.height+25,
+                fill="#D8EBFA" if index == self.page_index else "#E9EEF4",
+                outline="#1769AA" if index == self.page_index else "#D4DCE7",
+                width=2 if index == self.page_index else 1,
+                tags=(f"thumb_{index}",))
+            canvas.create_image(x, y, anchor="nw", image=photo,
+                                tags=(f"thumb_{index}",))
+            canvas.create_text(82, y+image.height+10,
+                text=f"Page {index+1} / {len(self.doc)}",
+                fill="#26364A", tags=(f"thumb_{index}",))
+            canvas.tag_bind(f"thumb_{index}", "<Button-1>",
+                            lambda _event, i=index: self.show_page(i))
+            y += image.height + 41
+        canvas.configure(scrollregion=(0, 0, 166, y+12))
+        canvas.yview_moveto(0)
 
     def search_pdf(self):
         from tkinter import simpledialog
@@ -275,6 +364,7 @@ class PDFViewer(tk.Toplevel):
         self.canvas.create_image(0, 0, anchor="nw", image=self.photo, tags="page")
         self.canvas.configure(scrollregion=(0, 0, image.width, image.height))
         self.status.configure(text=f"Page {self.page_index + 1}/{len(self.doc)}  •  {self.zoom:.0%}")
+        self.refresh_thumbnails()
 
     def coords(self, event):
         return self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
