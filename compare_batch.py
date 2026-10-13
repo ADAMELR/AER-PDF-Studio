@@ -33,9 +33,11 @@ def compare_document_pages(original, revised, output_folder, scale=1.5, auto_ali
     (output/"alignment_report.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
     with (output/"drawing_revision_register.csv").open("w",newline="",encoding="utf-8-sig") as stream:
         writer=csv.writer(stream)
-        writer.writerow(("Page","Comparison Image","Registration Method","Changed Pixel %","X Offset (px)","Y Offset (px)","Review Status"))
+        writer.writerow(("Page","Comparison Image","Registration Method","Changed Pixel %","X Offset (px)","Y Offset (px)","Review Status","Check Point Residual (px)","Registration Check"))
         for page in manifest["pages"]:
             writer.writerow((page["page"],page["output"],page["registration_method"],
                              format(page["changed_pixel_fraction"]*100,".2f"),
-                             page["shift_x_px"],page["shift_y_px"],"REQUIRES MANUAL REVIEW"))
+                             page["shift_x_px"],page["shift_y_px"],"REQUIRES MANUAL REVIEW",
+                             (page.get("manual_registration") or {}).get("check_residual_px",""),
+                             (page.get("manual_registration") or {}).get("quality_status","NOT CHECKED")))
     return results
