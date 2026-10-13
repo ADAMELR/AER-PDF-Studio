@@ -14,8 +14,13 @@ def estimate_translation(original, revised, max_shift=12, sample_width=180):
     width,height = original.size
     ratio = min(1.0, sample_width / max(width,height))
     shape = (max(1, round(width*ratio)), max(1,round(height*ratio)))
-    a=original.convert("L").resize(shape,Image.Resampling.BILINEAR).filter(ImageFilter.FIND_EDGES)
-    b=revised.convert("L").resize(shape,Image.Resampling.BILINEAR).filter(ImageFilter.FIND_EDGES)
+    base_a=original.convert("L").resize(shape,Image.Resampling.BILINEAR)
+    base_b=revised.convert("L").resize(shape,Image.Resampling.BILINEAR)
+    # A featureless or blank page cannot provide reliable registration evidence.
+    if min(ImageStat.Stat(base_a).stddev[0], ImageStat.Stat(base_b).stddev[0]) < 2:
+        return 0,0,False
+    a=base_a.filter(ImageFilter.FIND_EDGES)
+    b=base_b.filter(ImageFilter.FIND_EDGES)
     # An almost blank drawing does not contain enough registration evidence.
     if max(ImageStat.Stat(a).stddev[0], ImageStat.Stat(b).stddev[0]) < 2:
         return 0,0,False
