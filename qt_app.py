@@ -20,9 +20,12 @@ from PIL import Image
 
 from qt_model import DocumentState, page_size_fit
 from compare_batch import compare_document_pages
+from qt_registration import RegistrationDialog
+from page_selection import parse_page_selection
+from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
-from takeoff import Measurement, export_register_csv
+from takeoff import Measurement, export_register_csv, polygon_area_m2
 from pdf_text_search import find_text_pages
 from arabic_ocr import ocr_pdf_pages, OCRSetupError
 from searchable_ocr import make_searchable_pdf
@@ -59,6 +62,7 @@ def pixmap_from_pil(image):
 
 class DrawingCanvas(QLabel):
     dragged=Signal(tuple,tuple)
+    clicked=Signal(tuple)
     def __init__(self):
         super().__init__()
         self.setAlignment(Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft)
@@ -92,7 +96,10 @@ class DrawingCanvas(QLabel):
             self._start=None
             self._end=None
             self.update()
-            self.dragged.emit(start,end)
+            if abs(start[0]-end[0])<4 and abs(start[1]-end[1])<4:
+                self.clicked.emit(end)
+            else:
+                self.dragged.emit(start,end)
 
     def paintEvent(self,event):
         super().paintEvent(event)
@@ -114,6 +121,7 @@ class DocumentView(QWidget):
         self.document=pdfium.PdfDocument(str(path))
         self.canvas=DrawingCanvas()
         self.canvas.dragged.connect(self.on_drag)
+        self.canvas.clicked.connect(self.on_click)
         self.measure_mode="pan"
         self._render_scale=1.25
         self._page_height=1
@@ -139,6 +147,7 @@ class DocumentView(QWidget):
             self.canvas.set_image(pixmap_from_pil(image))
         finally:
             page.close()
+        self.polygon=[]
         self.page_changed.emit(self.state.page)
         self.info_changed.emit(
             f"Page {self.state.page+1} / {len(self.document)}   ·   {self.state.zoom:.0%}")
@@ -187,13 +196,39 @@ class DocumentView(QWidget):
             elif self.measure_mode=="area":
                 rect=(min(a[0],b[0]),min(a[1],b[1]),max(a[0],b[0]),max(a[1],b[1]))
                 value=rectangle_area_m2(rect,reference)
-                kind,unit="Rectangle area","m²"
+                kind,unit="Rectangle","m2"
             else:
                 return
             self.state.measurements.append(Measurement(self.state.page+1,kind,value,unit))
             self.info_changed.emit(f"Approximate {kind}: {value:.3f} {unit}")
         except (ValueError,TypeError) as exc:
             QMessageBox.warning(self,"Measurement error",str(exc))
+
+    def on_click(self,screen_point):
+        if self.measure_mode!="polygon":
+            return
+        calibration=self.state.calibration()
+        if calibration is None:
+            QMessageBox.warning(self,"Calibration required",
+                "Calibrate this page before measuring a polygon.")
+            return
+        point=screen_to_pdf(screen_point,self._render_scale,self._page_height)
+        self.polygon.append(point)
+        self.info_changed.emit(f"Polygon vertex {len(self.polygon)} recorded — finish to calculate area")
+
+    def finish_polygon(self):
+        if self.measure_mode!="polygon" or len(self.polygon)<3:
+            QMessageBox.information(self,"Polygon","Choose Polygon and click at least three vertices.")
+            return
+        try:
+            value=polygon_area_m2(self.polygon,self.state.calibration())
+            self.state.measurements.append(
+                Measurement(self.state.page+1,"Polygon",value,"m2")
+            )
+            self.polygon=[]
+            self.info_changed.emit(f"Approximate polygon area: {value:.3f} m²")
+        except (ValueError,TypeError) as exc:
+            QMessageBox.warning(self,"Polygon error",str(exc))
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -295,9 +330,10 @@ class MainWindow(QMainWindow):
         self.ribbon.addAction(self._action("Fit page",lambda:self.fit(False)))
         self.ribbon.addSeparator()
         self.mode_box=QComboBox()
-        self.mode_box.addItems(["pan","calibrate","distance","area"])
+        self.mode_box.addItems(["pan","calibrate","distance","area","polygon"])
         self.mode_box.currentTextChanged.connect(self.change_mode)
         self.ribbon.addWidget(self.mode_box)
+        self.ribbon.addAction(self._action("Finish polygon",self.finish_polygon))
 
     def _build_docks(self):
         self.pages_dock=QDockWidget("Pages / الصفحات",self)
@@ -318,8 +354,11 @@ class MainWindow(QMainWindow):
             ("Calibrate page",lambda:self.mode_box.setCurrentText("calibrate")),
             ("Measure distance",lambda:self.mode_box.setCurrentText("distance")),
             ("Measure area",lambda:self.mode_box.setCurrentText("area")),
+            ("Polygon takeoff",lambda:self.mode_box.setCurrentText("polygon")),
+            ("Finish polygon",self.finish_polygon),
             ("Export measurements CSV",self.export_measurements),
             ("Save measurements project",self.save_measurements),
+            ("Open measurements project",self.load_measurements),
         ):
             button=QPushButton(label)
             button.clicked.connect(action)
@@ -530,16 +569,61 @@ class MainWindow(QMainWindow):
         revised,_=QFileDialog.getOpenFileName(self,"Revised drawing PDF","","PDF files (*.pdf)")
         if not revised:
             return
-        folder=QFileDialog.getExistingDirectory(self,"Choose comparison output directory")
-        if not folder:
-            return
         try:
-            outputs=compare_document_pages(original,revised,folder,side_by_side=True)
+            count_original=len(PdfReader(original).pages)
+            count_revised=len(PdfReader(revised).pages)
+            if count_original!=count_revised:
+                raise ValueError("Drawing page counts must match for this comparison")
+            if not count_original:
+                raise ValueError("Documents contain no pages")
+            points={}
+            manual=QMessageBox.question(self,"Drawing registration",
+                "Select three corresponding registration points on chosen pages? "
+                "Choose No for translation-only automatic matching.")
+            if manual==QMessageBox.StandardButton.Yes:
+                selection,ok=QInputDialog.getText(self,"Drawing pages",
+                    f"Pages to register (1-{count_original}), e.g. 1,3-5 or all:","", "1")
+                if not ok:
+                    return
+                pages=parse_page_selection(selection,count_original)
+                for page_index in pages:
+                    dialog=RegistrationDialog(self,original,revised,page_index,scale=1.5)
+                    if dialog.exec()!=dialog.DialogCode.Accepted:
+                        return
+                    points[page_index]=dialog.result_points
+            folder=QFileDialog.getExistingDirectory(self,"Choose comparison output directory")
+            if not folder:
+                return
+            outputs=compare_document_pages(original,revised,folder,
+                side_by_side=True,control_points=points if points else None)
             QMessageBox.information(self,"Comparison complete",
-                f"Saved {len(outputs)} comparison images, an alignment report and a revision CSV. "
-                "Inspect all results manually. Manual three-point registration remains in the classic app.")
+                f"Saved {len(outputs)} comparison image(s), an alignment report and a revision CSV. "
+                "Inspect all results manually; registration checks are not certified tolerances.")
         except Exception as exc:
             QMessageBox.critical(self,"Comparison error",str(exc))
+
+    def finish_polygon(self):
+        view=self.need_document()
+        if view:
+            view.finish_polygon()
+
+    def load_measurements(self):
+        from project_store import load_project
+        view=self.need_document()
+        if not view:
+            return
+        path,_=QFileDialog.getOpenFileName(self,"Open measurements project",
+            "","AER JSON (*.aer.json);;JSON (*.json)")
+        if not path:
+            return
+        try:
+            records,calibrations=load_project(path,view.state.path)
+            view.state.measurements=records
+            view.state.calibrations=calibrations
+            view.info_changed.emit(
+                f"Loaded {len(records)} measurements and {len(calibrations)} calibrations")
+        except Exception as exc:
+            QMessageBox.warning(self,"Cannot load project",str(exc))
 
     def export_measurements(self):
         view=self.need_document()
@@ -559,7 +643,10 @@ class MainWindow(QMainWindow):
             return
         path,_=QFileDialog.getSaveFileName(self,"Save project","","AER JSON (*.aer.json)")
         if path:
-            save_project(path,view.state.path,view.state.measurements,view.state.calibrations)
+            try:
+                save_project(path,view.state.path,view.state.measurements,view.state.calibrations)
+            except Exception as exc:
+                QMessageBox.warning(self,"Cannot save project",str(exc))
 
     def ocr(self,kind):
         view=self.need_document()
