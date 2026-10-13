@@ -1,15 +1,16 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, simpledialog
 from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from viewer import PDFViewer
 from compare_batch import compare_document_pages
 from point_picker import pick_control_points
+from page_selection import parse_page_selection
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.8")
+        self.title("AER PDF Studio — Community Preview 0.9")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
@@ -63,20 +64,30 @@ class App(tk.Tk):
         revised = filedialog.askopenfilename(title="Select revised drawing PDF", filetypes=[("PDF", "*.pdf")])
         if not revised:
             return
-        manual = messagebox.askyesno("Drawing registration", "Choose matching control points on the first page?\\nYes = rotate/scale/translate page 1 using two point pairs.\\nNo = automatic translation-only alignment.")
-        points = None
+        manual = messagebox.askyesno("Drawing registration", "Select matching control points on chosen pages?\\nYes = manual page selection.\\nNo = automatic translation alignment.")
+        points = {}
         if manual:
             try:
-                points=pick_control_points(self,original,revised,scale=1.5)
+                count_original = len(PdfReader(original).pages)
+                count_revised = len(PdfReader(revised).pages)
+                if count_original != count_revised:
+                    raise ValueError("PDF page counts differ; match revisions manually first")
+                selection = simpledialog.askstring("Choose drawing pages", f"Enter pages (1-{count_original}), e.g. 1,3-5 or all:", initialvalue="1", parent=self)
+                if selection is None:
+                    return
+                pages = parse_page_selection(selection, count_original)
+                for page in pages:
+                    selected = pick_control_points(self, original, revised, scale=1.5, page_index=page)
+                    if selected is None:
+                        return
+                    points[page] = selected
             except Exception as exc:
                 messagebox.showerror("Point selection failed",str(exc))
-                return
-            if points is None:
                 return
         target = filedialog.askdirectory(title="Select folder for multi-page comparison images")
         if target:
             try:
-                outputs = compare_document_pages(original, revised, target, side_by_side=True, control_points={0: points} if points else None)
+                outputs = compare_document_pages(original, revised, target, side_by_side=True, control_points=points if points else None)
                 messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
