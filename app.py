@@ -6,13 +6,16 @@ from viewer import PDFViewer
 from compare_batch import compare_document_pages
 from point_picker import pick_control_points
 from page_selection import parse_page_selection
+from localization import tr
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 1.0")
+        self.title("AER PDF Studio — Community Preview 1.1")
         self.geometry("900x600")
         self.files = []
+        self.language = tk.StringVar(value="en")
+        self._labels=[]
         bar = ttk.Frame(self, padding=10)
         bar.pack(fill="x")
         for label, fn in [
@@ -21,14 +24,28 @@ class App(tk.Tk):
             ("Merge / Save", self.merge), ("Split Selected", self.split),
             ("Rotate Selected", self.rotate)
         ]:
-            ttk.Button(bar, text=label, command=fn).pack(side="left", padx=3)
+            key={"Add PDFs":"add","Open Viewer":"open","Compare Drawings":"compare","Remove":"remove","Move Up":"up","Move Down":"down","Merge / Save":"merge","Split Selected":"split","Rotate Selected":"rotate"}[label]
+            btn=ttk.Button(bar, text=tr(self.language.get(),key), command=fn)
+            btn.pack(side="left", padx=3)
+            self._labels.append((btn,key))
+        ttk.Combobox(bar, textvariable=self.language, values=("en","ar"), state="readonly", width=4).pack(side="right", padx=6)
+        self.language.trace_add("write",self.update_language)
         self.tree = ttk.Treeview(self, columns=("pages", "path"), show="headings", selectmode="browse")
         self.tree.heading("pages", text="Pages")
         self.tree.heading("path", text="PDF File")
         self.tree.column("pages", width=70, anchor="center")
         self.tree.column("path", width=750)
         self.tree.pack(fill="both", expand=True, padx=12, pady=12)
-        ttk.Label(self, text="Local-only PDF operations • Files are not uploaded • Save produces new PDFs", padding=10).pack(fill="x")
+        self.footer=ttk.Label(self, text=tr("en","footer"), padding=10)
+        self.footer.pack(fill="x")
+
+    def update_language(self,*_):
+        language=self.language.get()
+        for widget,key in self._labels:
+            widget.configure(text=tr(language,key))
+        self.tree.heading("pages",text=tr(language,"pages"))
+        self.tree.heading("path",text=tr(language,"file"))
+        self.footer.configure(text=tr(language,"footer"))
 
     def add(self):
         for path in filedialog.askopenfilenames(filetypes=[("PDF files", "*.pdf")]):
@@ -53,7 +70,7 @@ class App(tk.Tk):
         index = self.selected()
         if index is not None:
             try:
-                PDFViewer(self, self.files[index])
+                PDFViewer(self, self.files[index], language=self.language.get())
             except Exception as exc:
                 messagebox.showerror("Preview failed", str(exc))
 
