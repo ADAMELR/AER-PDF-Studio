@@ -3,12 +3,12 @@ from tkinter import filedialog, messagebox, ttk
 from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from viewer import PDFViewer
-from compare import compare_pages
+from compare_batch import compare_document_pages
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.2")
+        self.title("AER PDF Studio — Community Preview 0.5")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
@@ -62,11 +62,11 @@ class App(tk.Tk):
         revised = filedialog.askopenfilename(title="Select revised drawing PDF", filetypes=[("PDF", "*.pdf")])
         if not revised:
             return
-        target = filedialog.asksaveasfilename(title="Save comparison image", defaultextension=".png", filetypes=[("PNG", "*.png")])
+        target = filedialog.askdirectory(title="Select folder for multi-page comparison images")
         if target:
             try:
-                compare_pages(original, revised, target)
-                messagebox.showinfo("Comparison saved", "Page 1 visual difference saved to:\\n" + target)
+                outputs = compare_document_pages(original, revised, target)
+                messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
 
