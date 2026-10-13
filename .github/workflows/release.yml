@@ -1,0 +1,75 @@
+name: Publish reviewed Windows prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "New tag, e.g. v1.4.0-preview.1"
+        required: true
+        type: string
+      reviewed:
+        description: "I have manually smoke-tested this commit on Windows and reviewed licences/security notices"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: ${{ inputs.reviewed == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+  release:
+    needs: verify
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version tag
+        shell: pwsh
+        run: |
+          if ($env:TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$') {
+            throw "Tag must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-preview.N"
+          }
+          gh release view "$env:TAG" --repo "$env:REPO" *> $null
+          if ($LASTEXITCODE -eq 0) { throw "This release tag already exists" }
+          $existingTag = git ls-remote --tags origin "refs/tags/$env:TAG"
+          if ($existingTag) { throw "This tag already exists" }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install build tools
+        run: python -m pip install -r requirements.txt pyinstaller
+      - name: Build portable executable
+        run: python -m PyInstaller --clean --onefile --windowed --name AER-PDF-Studio app.py
+      - name: Package ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/AER-PDF-Studio.exe", "README.md", "LICENSE", "SECURITY.md" -DestinationPath "AER-PDF-Studio-Windows-$env:TAG.zip" -CompressionLevel Optimal
+          $hash = (Get-FileHash "AER-PDF-Studio-Windows-$env:TAG.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  AER-PDF-Studio-Windows-$env:TAG.zip" | Out-File -FilePath "SHA256SUMS.txt" -Encoding ascii
+      - name: Create GitHub prerelease
+        shell: pwsh
+        run: |
+          gh release create "$env:TAG" "AER-PDF-Studio-Windows-$env:TAG.zip" "SHA256SUMS.txt" --repo "$env:REPO" --target "$env:GITHUB_SHA" --title "AER PDF Studio $env:TAG (Community Preview)" --prerelease --generate-notes
