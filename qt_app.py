@@ -71,11 +71,13 @@ class DrawingCanvas(QLabel):
         self._start=None
         self._end=None
         self._picture=None
+        self.polygon_points=[]
 
     def set_image(self,pixmap):
         self._picture=pixmap
         self._start=None
         self._end=None
+        self.polygon_points=[]
         self.setFixedSize(pixmap.size())
         self.setPixmap(pixmap)
 
@@ -109,6 +111,16 @@ class DrawingCanvas(QLabel):
             from PySide6.QtCore import QRectF
             painter.drawRect(QRectF(QPoint(int(self._start[0]),int(self._start[1])),
                                     QPoint(int(self._end[0]),int(self._end[1]))).normalized())
+            painter.end()
+        if self.polygon_points:
+            painter=QPainter(self)
+            painter.setPen(QPen(QColor("#1976af"),3))
+            for index,point in enumerate(self.polygon_points):
+                painter.drawEllipse(int(point[0])-4,int(point[1])-4,8,8)
+                if index:
+                    previous=self.polygon_points[index-1]
+                    painter.drawLine(int(previous[0]),int(previous[1]),
+                                     int(point[0]),int(point[1]))
             painter.end()
 
 class DocumentView(QWidget):
@@ -148,6 +160,7 @@ class DocumentView(QWidget):
         finally:
             page.close()
         self.polygon=[]
+        self.canvas.polygon_points=[]
         self.page_changed.emit(self.state.page)
         self.info_changed.emit(
             f"Page {self.state.page+1} / {len(self.document)}   ·   {self.state.zoom:.0%}")
@@ -214,6 +227,8 @@ class DocumentView(QWidget):
             return
         point=screen_to_pdf(screen_point,self._render_scale,self._page_height)
         self.polygon.append(point)
+        self.canvas.polygon_points.append(screen_point)
+        self.canvas.update()
         self.info_changed.emit(f"Polygon vertex {len(self.polygon)} recorded — finish to calculate area")
 
     def finish_polygon(self):
@@ -226,6 +241,8 @@ class DocumentView(QWidget):
                 Measurement(self.state.page+1,"Polygon",value,"m2")
             )
             self.polygon=[]
+            self.canvas.polygon_points=[]
+            self.canvas.update()
             self.info_changed.emit(f"Approximate polygon area: {value:.3f} m²")
         except (ValueError,TypeError) as exc:
             QMessageBox.warning(self,"Polygon error",str(exc))
@@ -582,7 +599,8 @@ class MainWindow(QMainWindow):
                 "Choose No for translation-only automatic matching.")
             if manual==QMessageBox.StandardButton.Yes:
                 selection,ok=QInputDialog.getText(self,"Drawing pages",
-                    f"Pages to register (1-{count_original}), e.g. 1,3-5 or all:","", "1")
+                    f"Pages to register (1-{count_original}), e.g. 1,3-5 or all:",
+                    QLineEdit.EchoMode.Normal,"1")
                 if not ok:
                     return
                 pages=parse_page_selection(selection,count_original)
