@@ -1,4 +1,4 @@
-# AER PDF Studio — Community Preview 1.2
+# AER PDF Studio — Community Preview 1.3
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
@@ -8,7 +8,8 @@ Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**,
 - Search existing PDF text layers for Arabic or English Unicode text from the viewer; jumps to the first matching page
 - Arabic filenames and pre-rendered text can work through the underlying Unicode and PDFium handling, but are not yet independently tested with representative documents
 - Local OCR to UTF-8 text using a separately installed Tesseract executable with Arabic (ara), English (eng), or both language datasets
-- The OCR button in PDF Viewer saves the extracted text to a .txt file; it does not modify the PDF or make it searchable
+- The OCR to Text button exports UTF-8 .txt without altering source
+- **Create Searchable PDF / إنشاء PDF قابل للبحث** renders source pages and saves a new PDF with a Tesseract hidden searchable OCR text layer; original unchanged, vector PDF content/annotations/links not preserved
 - Direct Arabic PDF text editing, embedded Arabic font authoring, search-result highlighting and complete RTL layout are not implemented yet
 
 ## Features
@@ -63,4 +64,8 @@ Pick three corresponding locations on each selected page. The first two define t
 4. Select **1 Arabic**, **2 English** or **3 Both**. Choose a destination .txt file.
 5. The tool renders pages locally and uses Tesseract without uploading files. Long documents may take time.
 
-**Limitations:** Tesseract is an external prerequisite, not bundled with the Windows EXE. Mixed-direction layout, Arabic diacritics, tables, and handwriting may not be recovered accurately; validate extracted text against the original. This release only exports plain text, not searchable PDF layers. OCR reads the entire PDF and has a maximum raster page size of 25 megapixels.
+**Limitations:** Tesseract is an external prerequisite, not bundled with the Windows EXE. Mixed-direction layout, Arabic diacritics, tables, and handwriting may not be recovered accurately; validate extracted text against the original. The Searchable PDF action creates a rasterized PDF with hidden OCR text; it is not suitable for preserving vector drawings, measurements, links or annotations. OCR reads the entire PDF and has a maximum raster page size of 25 megapixels.
+
+## Searchable Arabic PDF export (v1.3)
+
+Open the scanned PDF and choose **Create Searchable PDF / إنشاء PDF قابل للبحث**. Pick Arabic, English or both and save to a **different** PDF file. The program renders all pages as images and invokes locally installed Tesseract to produce a PDF with a hidden OCR text layer, then combines pages. OCR accuracy varies with scan quality, Arabic ligatures and diacritics; confirm text using a PDF reader. Source vector graphics, editable text, bookmarks, links, and annotations are not preserved. For engineering drawings, retain the original vector PDF and use this new copy only as a searchable reference. Tesseract and language models are separate prerequisites.
