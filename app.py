@@ -2,17 +2,18 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pypdf import PdfReader
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
+from viewer import PDFViewer
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.1")
+        self.title("AER PDF Studio — Community Preview 0.2")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
         bar.pack(fill="x")
         for label, fn in [
-            ("Add PDFs", self.add), ("Remove", self.remove),
+            ("Add PDFs", self.add), ("Open Viewer", self.open_viewer), ("Remove", self.remove),
             ("Move Up", lambda: self.move(-1)), ("Move Down", lambda: self.move(1)),
             ("Merge / Save", self.merge), ("Split Selected", self.split),
             ("Rotate Selected", self.rotate)
@@ -44,6 +45,14 @@ class App(tk.Tk):
             self.tree.delete(item)
         for path in self.files:
             self.tree.insert("", "end", values=(len(PdfReader(path).pages), path))
+
+    def open_viewer(self):
+        index = self.selected()
+        if index is not None:
+            try:
+                PDFViewer(self, self.files[index])
+            except Exception as exc:
+                messagebox.showerror("Preview failed", str(exc))
 
     def remove(self):
         index = self.selected()
