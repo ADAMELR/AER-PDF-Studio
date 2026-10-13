@@ -3,6 +3,7 @@ from pathlib import Path
 import pypdfium2 as pdfium
 from PIL import Image, ImageChops
 from control_points import align_control_points
+from registration_quality import check_point_residual
 from alignment import estimate_translation, translate_to_match
 
 def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_align=True, return_alignment=False, control_points=None, side_by_side=False):
@@ -24,7 +25,14 @@ def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_
         manual_info=None
         if control_points is not None:
             manual_ref,manual_moving=control_points
-            image_b,manual_info=align_control_points(image_a,image_b,manual_ref,manual_moving)
+            if len(manual_ref) not in (2,3) or len(manual_ref)!=len(manual_moving):
+                raise ValueError('Use two or three matching point pairs')
+            image_b,manual_info=align_control_points(image_a,image_b,manual_ref[:2],manual_moving[:2])
+            if len(manual_ref)==3:
+                manual_info.update(check_point_residual(manual_ref[2],manual_moving[2],manual_info))
+            else:
+                manual_info['quality_status']='NOT CHECKED'
+                manual_info['quality_note']='No independent third point supplied'
         elif auto_align:
             dx,dy,valid=estimate_translation(image_a,image_b)
             if valid:
