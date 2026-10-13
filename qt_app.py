@@ -8,13 +8,13 @@ from pathlib import Path
 import sys
 
 import pypdfium2 as pdfium
-from PySide6.QtCore import Qt, Signal, QPoint, QTimer
+from PySide6.QtCore import Qt, Signal, QPoint, QTimer, QSettings
 from PySide6.QtGui import QAction, QImage, QPixmap, QIcon, QKeySequence, QPainter, QPen, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QScrollArea, QTabWidget, QDockWidget, QListWidget, QListWidgetItem,
     QToolBar, QFileDialog, QMessageBox, QInputDialog, QComboBox, QStatusBar,
-    QPushButton, QFrame, QLineEdit, QMenu, QToolButton, QSizePolicy
+    QPushButton, QFrame, QLineEdit, QMenu, QToolButton, QSizePolicy, QStyle
 )
 from PIL import Image
 
@@ -203,6 +203,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960,650)
         self.views={}
         self.locale="en"
+        self.settings=QSettings("AER Engineering", "AER PDF Studio Qt")
         self.tabs=QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)
@@ -212,6 +213,7 @@ class MainWindow(QMainWindow):
         self._build_menus()
         self._build_toolbar()
         self._build_docks()
+        self._set_icons()
         self._welcome()
         self.status=QLabel("Ready — local PDF workspace")
         self.statusBar().addPermanentWidget(self.status)
@@ -220,6 +222,27 @@ class MainWindow(QMainWindow):
         self._thumb_timer.setSingleShot(True)
         self._thumb_timer.timeout.connect(self.refresh_thumbnails)
         self._retranslate()
+        geometry=self.settings.value("window_geometry")
+        docks=self.settings.value("window_state")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        if docks is not None:
+            self.restoreState(docks)
+
+    def _set_icons(self):
+        style=self.style()
+        standard=QStyle.StandardPixmap
+        icons=(
+            (self.open_action,standard.SP_DialogOpenButton),
+            (self.merge_action,standard.SP_DriveFDIcon),
+            (self.split_action,standard.SP_FileIcon),
+            (self.rotate_action,standard.SP_BrowserReload),
+            (self.search_action,standard.SP_FileDialogContentsView),
+            (self.compare_action,standard.SP_FileDialogDetailedView),
+        )
+        for action,icon in icons:
+            action.setIcon(style.standardIcon(icon))
+        self.ribbon.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
 
     def _action(self,label,slot,shortcut=None):
         act=QAction(label,self)
@@ -574,6 +597,8 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self,"OCR error",str(exc))
 
     def closeEvent(self,event):
+        self.settings.setValue("window_geometry",self.saveGeometry())
+        self.settings.setValue("window_state",self.saveState())
         for view in list(self.views.values()):
             view.close()
         event.accept()
