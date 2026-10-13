@@ -5,6 +5,9 @@ on:
     paths:
       - 'qt_app.py'
       - 'qt_model.py'
+      - 'qt_registration.py'
+      - 'project_store.py'
+      - 'page_selection.py'
       - 'requirements-qt.txt'
       - 'tests/test_qt_smoke.py'
       - 'tests/test_qt_model.py'
@@ -38,7 +41,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -r requirements-qt.txt
-      - run: python -m compileall -q qt_app.py qt_model.py
+      - run: python -m compileall -q qt_app.py qt_model.py qt_registration.py
       - run: python -m unittest discover -s tests -v
 
   windows-qt-build:
