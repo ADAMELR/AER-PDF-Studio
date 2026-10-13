@@ -8,7 +8,7 @@ from compare_batch import compare_document_pages
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.6")
+        self.title("AER PDF Studio — Community Preview 0.7")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
@@ -65,7 +65,7 @@ class App(tk.Tk):
         target = filedialog.askdirectory(title="Select folder for multi-page comparison images")
         if target:
             try:
-                outputs = compare_document_pages(original, revised, target)
+                outputs = compare_document_pages(original, revised, target, side_by_side=True)
                 messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
