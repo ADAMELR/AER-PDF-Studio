@@ -8,6 +8,7 @@ from PIL import ImageTk
 from annotations import add_rectangle_markup
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
 from takeoff import Measurement, polygon_area_m2, export_register_csv
+from project_store import save_project, load_project
 
 
 class PDFViewer(tk.Toplevel):
@@ -22,6 +23,7 @@ class PDFViewer(tk.Toplevel):
         self.selection = None
         self.calibration = None
         self.calibration_page = None
+        self.calibrations = {}
         self.register = []
         self.polygon_vertices = []
         self.mode = tk.StringVar(value="rectangle")
@@ -38,6 +40,8 @@ class PDFViewer(tk.Toplevel):
         ttk.Button(toolbar, text="Save Rectangle Markup", command=self.save_markup).pack(side="left", padx=5)
         ttk.Button(toolbar, text="Finish Polygon", command=self.finish_polygon).pack(side="left")
         ttk.Button(toolbar, text="Export CSV", command=self.export_register).pack(side="left")
+        ttk.Button(toolbar, text="Save Project", command=self.save_project).pack(side="left")
+        ttk.Button(toolbar, text="Open Project", command=self.open_project).pack(side="left")
         ttk.Combobox(toolbar, textvariable=self.mode, values=["rectangle","calibrate","distance","area","polygon"], state="readonly", width=12).pack(side="left", padx=4)
         self.status = ttk.Label(toolbar, text="")
         self.status.pack(side="right")
@@ -74,6 +78,8 @@ class PDFViewer(tk.Toplevel):
         self.drag_start = None
         self.polygon_vertices = []
         self.canvas.delete("all")
+        self.calibration = self.calibrations.get(self.page_index)
+        self.calibration_page = self.page_index if self.calibration else None
         page = self.doc[self.page_index]
         bitmap = page.render(scale=self.zoom)
         image = bitmap.to_pil().convert("RGB")
@@ -135,6 +141,7 @@ class PDFViewer(tk.Toplevel):
                 if known is None:
                     return
                 self.calibration = calibrate(a, b, known)
+                self.calibrations[self.page_index] = self.calibration
                 self.calibration_page = self.page_index
                 self.measure_text.set(f"Page {self.page_index+1} calibration: {self.calibration.metres_per_point:.8f} metres / PDF point")
             else:
@@ -177,6 +184,27 @@ class PDFViewer(tk.Toplevel):
                 messagebox.showinfo("Export complete",target,parent=self)
             except Exception as exc:
                 messagebox.showerror("Export error",str(exc),parent=self)
+
+    def save_project(self):
+        path = filedialog.asksaveasfilename(parent=self,defaultextension=".aer.json",filetypes=[("AER project","*.aer.json")])
+        if path:
+            try:
+                save_project(path,self.source,self.register,self.calibrations)
+                messagebox.showinfo("Saved",f"Project saved to {path}",parent=self)
+            except Exception as exc:
+                messagebox.showerror("Project save error",str(exc),parent=self)
+
+    def open_project(self):
+        path = filedialog.askopenfilename(parent=self,filetypes=[("AER project","*.aer.json"),("JSON","*.json")])
+        if path:
+            try:
+                records,scales = load_project(path,self.source)
+                self.register,self.calibrations = records,scales
+                self.calibration=self.calibrations.get(self.page_index)
+                self.calibration_page=self.page_index if self.calibration else None
+                self.measure_text.set(f"Loaded {len(records)} measurements and {len(scales)} page calibrations")
+            except Exception as exc:
+                messagebox.showerror("Project load error",str(exc),parent=self)
 
     def save_markup(self):
         if self.mode.get() != "rectangle":
