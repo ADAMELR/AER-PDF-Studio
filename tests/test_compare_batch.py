@@ -1,4 +1,6 @@
 import tempfile
+import json
+import csv
 import unittest
 from pathlib import Path
 from pypdf import PdfWriter
@@ -20,6 +22,13 @@ class BatchComparisonTests(unittest.TestCase):
             results=compare_document_pages(p/"a.pdf",p/"b.pdf",p/"output",scale=1)
             self.assertEqual(len(results),2)
             self.assertTrue(all(path.exists() for path in results))
+            report=json.loads((p/'output'/'alignment_report.json').read_text())
+            self.assertEqual(len(report['pages']),2)
+            self.assertIn('changed_pixel_fraction',report['pages'][0])
+            with (p/'output'/'drawing_revision_register.csv').open(encoding='utf-8-sig',newline='') as stream:
+                rows=list(csv.DictReader(stream))
+            self.assertEqual(len(rows),2)
+            self.assertEqual(rows[0]['Review Status'],'REQUIRES MANUAL REVIEW')
 
     def test_count_mismatch_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
