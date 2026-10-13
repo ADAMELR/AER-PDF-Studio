@@ -1,39 +1,50 @@
-# AER PDF Studio — Community Preview 1.4
+# AER PDF Studio
 
-Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
+**Free, open-source desktop PDF tools for Windows — engineering drawing comparison, takeoffs, and Arabic/English OCR.**
 
-## Arabic / English support (preview)
+[![CI: tests and Windows build](https://github.com/ADAMELR/AER-PDF-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/ADAMELR/AER-PDF-Studio/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-informational)](https://github.com/ADAMELR/AER-PDF-Studio/releases)
 
-- Main toolbar language switch (en / ar); English and Arabic labels on principal commands
-- Search existing PDF text layers for Arabic or English Unicode text from the viewer; jumps to the first matching page
-- Arabic filenames and pre-rendered text can work through the underlying Unicode and PDFium handling, but are not yet independently tested with representative documents
-- Local OCR to UTF-8 text using a separately installed Tesseract executable with Arabic (ara), English (eng), or both language datasets
-- The OCR to Text button exports UTF-8 .txt without altering source
-- **Create Searchable PDF / إنشاء PDF قابل للبحث** rasterizes source pages, adding searchable text; original unchanged
-- **Preserve Vector + OCR / حفظ الرسم المتجهي وإضافة OCR** retains original PDF pages and adds extracted hidden text from Tesseract's PDF text layer, without overlaying OCR page images
-- Direct Arabic PDF text editing, embedded Arabic font authoring, search-result highlighting and complete RTL layout are not implemented yet
+**[Download releases](https://github.com/ADAMELR/AER-PDF-Studio/releases)** · **[Features](#features)** · **[Getting started](#getting-started)** · **[Report a bug](https://github.com/ADAMELR/AER-PDF-Studio/issues/new/choose)**
+
+> **Community Preview v1.4 — not a certified engineering, document-control or PDF-signing product.**
+> Release downloads will appear under **Releases** once a reviewed release is published.
+> Until then, successful builds can be downloaded from [GitHub Actions](https://github.com/ADAMELR/AER-PDF-Studio/actions) (sign-in may be required).
+
+AER PDF Studio is a locally running Python/Tkinter desktop application. It is designed for engineers, designers, construction teams, and anyone managing PDF drawings and bilingual documents. PDFs are processed locally; the project does not contain cloud upload functionality.
 
 ## Features
 
-- Local PDF page rendering, zoom, previous/next navigation using PDFium
-- Per-page calibration using a known drawing dimension in metres
-- Approximate distance, rectangular area and polygon area takeoffs (m and m²)
-- Measurement register with CSV export and local JSON project save/reopen, including per-page calibrations
-- Multi-page visual difference images with translation-only auto-alignment (same page sizes and counts)
-- Side-by-side drawing comparison images (original next to revised with red-highlighted differences)
-- Interactive selection of three matching control points on selected pages on original and revised drawings
-- Manual two-point rotation, uniform scaling and translation on selected pages; other pages use automatic translation-only matching
-- Per-page alignment_report.json recording offsets, registration method, and percentage of changed pixels
-- drawing_revision_register.csv with a manual-review-required status
-- An independent third corresponding point used to calculate a check residual (rendered pixels) after alignment
-- Drag a rectangle on a page and save visible red markup into a **new PDF**
-- Reorder, merge, split and rotate PDFs
-- Automated tests on Windows and Ubuntu for Python 3.11 and 3.13
-- Windows EXE artifact built after successful test jobs
+| Category | Current capability | Limitations |
+| --- | --- | --- |
+| PDF workspace | View pages, navigate, zoom, merge, split, rotate | Still an early desktop preview |
+| Engineering takeoffs | Calibrate page scale; distance, rectangular and polygon area measurements; CSV register | Approximate measurements only; independently verify against design dimensions |
+| Drawing revisions | Side-by-side difference images, automatic translation matching, manual three-point selection, alignment report and CSV review register | Matched page counts/sizes required; control points 1–2 align, point 3 checks; human review required |
+| Markup | Add flattened red rectangle markups in a **new** PDF | Not editable native PDF annotations |
+| Local projects | Save and reopen measurements and page calibrations in JSON | Tied to the source PDF path |
+| Arabic and English | Partial bilingual toolbar, search text-based PDFs | Not yet full RTL interface or text editing |
+| OCR text | Extract Arabic, English or mixed OCR to UTF-8 text using separately installed Tesseract | OCR quality depends on document and language data |
+| Searchable scanned PDF | Export a new rasterized PDF with OCR text layer | Source vector content not preserved in this mode |
+| **Vector-preserving OCR** | Add hidden OCR text to a copy of original PDF pages | Experimental; rotated/custom-cropped pages unsupported; signature invalidation |
 
-**Important:** Rectangle markups are flattened PDF content, not editable PDF annotations. Currently supported on ordinary non-rotated pages; native PDF annotations, text editing, signatures, OCR, native annotations and GPT functions are not yet implemented.
+### Screenshots and demos
 
-## Windows installation
+Real screenshots and a short demonstration of the Windows interface are planned. **Screenshots have intentionally not been fabricated.** Contributions of verified screenshots or a screen recording are welcome; see [Contributing](CONTRIBUTING.md).
+
+## Getting started
+
+### Option A — Windows download
+
+1. Check [Releases](https://github.com/ADAMELR/AER-PDF-Studio/releases) for a published, tested Windows release.
+2. Download its ZIP, extract, and launch `AER-PDF-Studio.exe`.
+3. If no formal release exists yet, use the latest *successful* [CI workflow](https://github.com/ADAMELR/AER-PDF-Studio/actions/workflows/ci.yml), find the `AER-PDF-Studio-Windows` artifact, and extract it. GitHub may ask you to sign in.
+
+AER PDF Studio is presently a **portable executable**, not a signed Windows installer. Unsigned builds may trigger Windows SmartScreen. Only run software you trust, and work on copies of important files.
+
+### Option B — Run from source
+
+Requires Python 3.11 or 3.13 on Windows:
 
 ```powershell
 git clone https://github.com/ADAMELR/AER-PDF-Studio.git
@@ -43,34 +54,43 @@ py -m venv .venv
 .\.venv\Scripts\python.exe app.py
 ```
 
-Select **Add PDFs**, choose a document, select its row and click **Open Viewer**. Use **Calibrate** mode: drag over a known length and enter its real-world metres. Then select **Distance** or **Area** and drag to measure. Area mode measures an axis-aligned rectangle. For polygon takeoffs select Polygon, click at least three vertices, then Finish Polygon. Choose Export CSV to save recorded measurements. Use Save Project and Open Project to preserve measurements and page calibrations between sessions. Projects are tied to the same local PDF path. Compare Drawings creates PNG difference images for every page for same-size PDFs, with automatic translation-only registration, side-by-side output and a JSON offset report. Choose **Yes** at the registration prompt, enter page numbers such as 1,3-5 or all, and click corresponding control points on each selected page in matching order. Other pages use translation-only matching. The changed-pixel percentage is a comparison statistic, NOT a registration-confidence score. Alignment does not correct rotation, different page scales, cropping or distortion. Inspect comparison images manually; automatic matching is not guaranteed. The calibration is maintained per currently calibrated page; repeat on other pages. In **rectangle** mode, drag and click **Save Rectangle Markup** to save a new PDF. Your source PDF remains unchanged. Measurements are approximate and must be checked against the design dimensions; drawings with different X/Y scaling cannot be accurately measured using the uniform calibration.
+## Quick workflow
 
-Tests: `py -m unittest discover -s tests -v`.
+**Open and measure:** Choose **Add PDFs**, select the document and click **Open Viewer**. Set **calibrate** mode and drag between two points of a known dimension, entering its length in metres. Then use **distance**, **area**, or **polygon**; export the takeoff register as CSV. For polygon measurements, click at least three points and select **Finish Polygon**. Project data can be saved and reopened.
 
-## Licensing and security
+**Compare revisions:** Choose **Compare Drawings** and select the original/revised PDFs and an output directory. Select automatic translation alignment or manually register pages such as `1,3-5` using three matching points. The first two points define a similarity transform, and the independent third point gives an approximate residual in rendered pixels. The outputs include side-by-side PNG files, `alignment_report.json`, and `drawing_revision_register.csv`. Every revision is flagged for manual review.
 
-Original project code is MIT licensed. Third-party libraries and their dependencies retain their own licensing and required notices. Review `AUDIT.md`; audit bundled PDFium binary notices before public executable distribution. PDF files can contain malicious content: only use trusted inputs during this prototype stage. This is not a security-hardened PDF editor or an engineering-certified measuring tool.
+**Arabic text search:** Select `ar` in the main window to switch the primary toolbar labels. In the viewer, choose **Search PDF / بحث في PDF** to search existing selectable text. Scanned PDFs require OCR first.
 
-Roadmap: registration accuracy checks with independent control points, editable annotation layers, OCR, visual revisions and overlay, and opt-in GPT assistance.
+**Arabic OCR:** Install Tesseract separately, together with `ara.traineddata` and/or `eng.traineddata` in its `tessdata` directory. The viewer offers:
+- **OCR to Text:** Output plain text to a new `.txt` file.
+- **Create Searchable PDF:** Create a rasterized PDF with hidden OCR text.
+- **Preserve Vector + OCR:** Experimental text-layer overlay on the original page content in a *new* PDF, with restrictions on rotation/crop boxes and potential alignment errors.
 
-## Alignment check
+**Keep the original PDF.** OCR does not guarantee correct Arabic ligatures, diacritics, mixed-direction paragraphs, drawings or tables. New OCR PDFs may invalidate digital signatures. Validate outputs before distributing or using them for engineering records.
 
-Pick three corresponding locations on each selected page. The first two define the rotation/scale/translation; the third is held out for validation. A residual at or below 3 raster pixels receives a CHECK label, otherwise REVIEW. This threshold is a preliminary heuristic, not a certified accuracy criterion; all drawing comparisons remain subject to manual review.
+## Development and testing
 
-## Offline Arabic OCR setup (Windows)
+```powershell
+py -m pip install -r requirements.txt
+py -m unittest discover -s tests -v
+```
 
-1. Install Tesseract OCR for Windows from a trusted source. Its installation location can be selected through the app if it is not on PATH.
-2. Ensure Arabic language data `ara.traineddata` is installed alongside English `eng.traineddata` in the Tesseract `tessdata` directory.
-3. Open your PDF in AER PDF Studio. Choose **OCR to Text / استخراج النص OCR**.
-4. Select **1 Arabic**, **2 English** or **3 Both**. Choose a destination .txt file.
-5. The tool renders pages locally and uses Tesseract without uploading files. Long documents may take time.
+GitHub Actions runs tests on Windows and Ubuntu with Python 3.11 and 3.13, and builds a Windows EXE after successful tests. A separate manual release workflow is provided for maintainers; a green CI badge **does not** mean that UI interactions, Arabic OCR accuracy or engineering measurements have been field-validated.
 
-**Limitations:** Tesseract is an external prerequisite, not bundled with the Windows EXE. Mixed-direction layout, Arabic diacritics, tables, and handwriting may not be recovered accurately; validate extracted text against the original. The Searchable PDF action creates a rasterized PDF with hidden OCR text; it is not suitable for preserving vector drawings, measurements, links or annotations. OCR reads the entire PDF and has a maximum raster page size of 25 megapixels.
+## Roadmap
 
-## Searchable Arabic PDF export (v1.3)
+- [ ] Verified screenshots, short demo, and user-tested portable Windows distribution
+- [ ] Better RTL handling and full Arabic translations throughout the viewer
+- [ ] OCR placement/quality validation on real-world Arabic documents and architectural/civil drawings
+- [ ] Editable annotation objects and more robust page geometry support
+- [ ] More complete drawing revision-management and sheet matching
+- [ ] Signed Windows installer once distribution and security review are ready
 
-Open the scanned PDF and choose **Create Searchable PDF / إنشاء PDF قابل للبحث**. Pick Arabic, English or both and save to a **different** PDF file. The program renders all pages as images and invokes locally installed Tesseract to produce a PDF with a hidden OCR text layer, then combines pages. OCR accuracy varies with scan quality, Arabic ligatures and diacritics; confirm text using a PDF reader. Source vector graphics, editable text, bookmarks, links, and annotations are not preserved. For engineering drawings, retain the original vector PDF and use this new copy only as a searchable reference. Tesseract and language models are separate prerequisites.
+See [Contributing](CONTRIBUTING.md) for ways to help, or [open a feature request](https://github.com/ADAMELR/AER-PDF-Studio/issues/new/choose).
 
-## Vector-preserving OCR export (v1.4 preview)
+## Security, limitations and licence
 
-In the PDF viewer choose **Preserve Vector + OCR / حفظ الرسم المتجهي وإضافة OCR**. This method overlays extracted OCR text onto original PDF page content. Existing linework, image content, page annotations, and most page resources remain in the PDF. Tesseract must be installed locally with the requested language models. Unsupported: rotated or custom-cropped pages, signed PDFs (signatures are invalidated), and guaranteed exact text alignment on unusual sheet formats. Text recognition is imperfect, including Arabic diacritics and complex mixed-direction passages. Before using the output, inspect original geometry, page count, annotations, fonts and OCR text positioning. Save to a new PDF path, never the source file.
+Only open PDFs you trust during this preview stage. The application has not been security-hardened, audited for all PDF attacks, or certified for quantity surveying or engineering. See [SECURITY.md](SECURITY.md) and [AUDIT.md](AUDIT.md). Third-party packages and binaries have separate licenses; verify notices before public redistribution.
+
+AER PDF Studio original source code is released under the [MIT License](LICENSE).
