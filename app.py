@@ -11,7 +11,7 @@ from localization import tr
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 1.1")
+        self.title("AER PDF Studio — Community Preview 1.2")
         self.geometry("900x600")
         self.files = []
         self.language = tk.StringVar(value="en")
