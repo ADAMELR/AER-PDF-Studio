@@ -8,7 +8,7 @@ from compare_batch import compare_document_pages
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.5")
+        self.title("AER PDF Studio — Community Preview 0.6")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
@@ -66,7 +66,7 @@ class App(tk.Tk):
         if target:
             try:
                 outputs = compare_document_pages(original, revised, target)
-                messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images to:\\n" + target)
+                messagebox.showinfo("Comparison saved", f"Saved {len(outputs)} page comparison images and alignment_report.json to:\\n" + target)
             except Exception as exc:
                 messagebox.showerror("Comparison failed", str(exc))
 
