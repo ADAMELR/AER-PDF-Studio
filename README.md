@@ -1,33 +1,33 @@
-# AER PDF Studio — Community Preview 0.1
+# AER PDF Studio — Community Preview 0.2
 
-A Windows-oriented open-source PDF organiser prototype. Built with Python, Tkinter and pypdf. Current capabilities: merge, split, rotate and reorder PDF files; this is not yet an Acrobat-style editor.
+Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
-## Run locally
+## Features
 
-Install Python 3.11+ and run:
+- Local PDF page rendering, zoom, previous/next navigation using PDFium
+- Drag a rectangle on a page and save visible red markup into a **new PDF**
+- Reorder, merge, split and rotate PDFs
+- Automated tests on Windows and Ubuntu for Python 3.11 and 3.13
+- Windows EXE artifact built after successful test jobs
+
+**Important:** Rectangle markups are flattened PDF content, not editable PDF annotations. Currently supported on ordinary non-rotated pages; engineering measurement scale calibration, text editing, signatures, OCR, native annotations and GPT functions are not yet implemented.
+
+## Windows installation
 
 ```powershell
+git clone https://github.com/ADAMELR/AER-PDF-Studio.git
+cd AER-PDF-Studio
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe app.py
 ```
 
-## Tests
+Select **Add PDFs**, choose a document, select its row and click **Open Viewer**. Drag to draw a rectangle and click **Save Rectangle Markup**. Your source PDF remains unchanged.
 
-```powershell
-py -m unittest discover -s tests -v
-```
+Tests: `py -m unittest discover -s tests -v`.
 
-The GitHub Actions workflow tests on Linux and Windows and then packages a Windows executable as a downloadable workflow artifact if all test jobs pass. A successful CI build is not a signed or professionally certified release.
+## Licensing and security
 
-## Open-source licence
+Original project code is MIT licensed. Third-party libraries and their dependencies retain their own licensing and required notices. Review `AUDIT.md`; audit bundled PDFium binary notices before public executable distribution. PDF files can contain malicious content: only use trusted inputs during this prototype stage. This is not a security-hardened PDF editor or an engineering-certified measuring tool.
 
-The project-original source is MIT licensed. Third-party dependency pypdf is BSD-3-Clause. No code from Stirling PDF, PDF Arranger, PDF.js or other PDF applications has yet been copied.
-
-## Roadmap
-
-PDF.js viewer; pdf-lib editing; annotated engineering measurements and overlays; OCR; optional GPT assistance. Licence review and regression tests must precede release.
-
-## Limitations
-
-No page previews, OCR, direct text editing, or digital-signature preservation guarantees. Test output PDFs before professional use.
+Roadmap: editable annotation layers, engineering drawing calibration, OCR, visual revisions and overlay, and opt-in GPT assistance.
