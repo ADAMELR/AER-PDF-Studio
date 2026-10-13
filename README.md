@@ -14,7 +14,35 @@
 
 AER PDF Studio is a locally running Python/Tkinter desktop application. It is designed for engineers, designers, construction teams, and anyone managing PDF drawings and bilingual documents. PDFs are processed locally; the project does not contain cloud upload functionality.
 
-## Redesigned desktop interface (v1.6)
+## AER PDF Studio 2.0 — Qt developer preview
+
+A **new PySide6/Qt desktop shell** is available alongside the stable classic Tkinter preview. It is a substantial interface migration, **not an Acrobat feature-equivalent product**.
+
+Implemented in `qt_app.py`:
+- **Real multi-document PDF tabs**, with close/reorder and avoidance of duplicate opened files
+- Dockable **Pages** and **Tools** panels, with thumbnails rendered only for the active page and nearby pages
+- Scrollable PDF canvas with PDFium rendering, page navigation, fit-to-page, fit-to-width and zoom
+- Arabic/English text search and a basic RTL window-direction switch
+- Basic calibrated distance and rectangular-area measurement with CSV/project export
+- Local Arabic/English OCR exports (plain text, raster searchable PDF and experimental vector-preserving OCR)
+- PDF merge, split, rotation, and automatic drawing revision comparison
+- New independently tested Qt Windows developer-preview build pipeline
+
+Not yet migrated: manual three-point comparison registration, polygon takeoff UI, editable native annotations, full Arabic translation, arbitrary PDF text editing, advanced Acrobat-style selection/annotation tools, and a fully validated high-DPI production workflow. The classic application continues to supply the earlier comparison and annotation features.
+
+**Run Qt from source (Windows):**
+
+```powershell
+git clone https://github.com/ADAMELR/AER-PDF-Studio.git
+cd AER-PDF-Studio
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-qt.txt
+.\.venv\Scripts\python.exe qt_app.py
+```
+
+The separate [Qt preview build workflow](https://github.com/ADAMELR/AER-PDF-Studio/actions/workflows/qt-ci.yml) produces an artifact named `AER-PDF-Studio-Qt-Preview-Windows` **only after the Qt test matrix passes**. It is **not** the classic Windows EXE. Qt packages substantially increase executable size. Both executables are currently unsigned. Treat output as preliminary until Windows UI and PDF regression testing is complete.
+
+## Classic interface (v1.6)
 
 The Windows UI now uses a contemporary, Office-inspired ribbon and an Acrobat-style document workspace (original visual styling; no Microsoft or Adobe logos/assets). The main window has a dark header, left navigation rail, Home / Drawings / Organise tabs, a searchable-looking but **not yet filterable** document list, double-click to open a PDF, and a simplified footer. The viewer has separate View, Measure, Markup and OCR tabs, avoiding the previous overcrowded toolbar. All original PDF processing features remain available. Version 1.6 adds a toggleable left page-thumbnail sidebar (click thumbnails to navigate), a collapsible right quick-tools panel, Page Up / Page Down navigation and Ctrl+F text search. Thumbnails are deliberately limited to nearby pages to avoid rendering huge PDF drawing sets at once. This is not yet a full multi-document tabbed viewer. Practical review on Windows at different DPI and screen sizes is still required.
 
