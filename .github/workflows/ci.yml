@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -r requirements.txt
-      - run: python -m compileall -q app.py pdf_operations.py viewer.py annotations.py measurements.py takeoff.py compare.py project_store.py compare_batch.py alignment.py control_points.py point_picker.py
+      - run: python -m compileall -q app.py pdf_operations.py viewer.py annotations.py measurements.py takeoff.py compare.py project_store.py compare_batch.py alignment.py control_points.py point_picker.py page_selection.py
       - run: python -m unittest discover -s tests -v
   windows-build:
     needs: test
