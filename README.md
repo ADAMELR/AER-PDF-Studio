@@ -1,4 +1,4 @@
-# AER PDF Studio — Community Preview 1.3
+# AER PDF Studio — Community Preview 1.4
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
@@ -9,7 +9,8 @@ Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**,
 - Arabic filenames and pre-rendered text can work through the underlying Unicode and PDFium handling, but are not yet independently tested with representative documents
 - Local OCR to UTF-8 text using a separately installed Tesseract executable with Arabic (ara), English (eng), or both language datasets
 - The OCR to Text button exports UTF-8 .txt without altering source
-- **Create Searchable PDF / إنشاء PDF قابل للبحث** renders source pages and saves a new PDF with a Tesseract hidden searchable OCR text layer; original unchanged, vector PDF content/annotations/links not preserved
+- **Create Searchable PDF / إنشاء PDF قابل للبحث** rasterizes source pages, adding searchable text; original unchanged
+- **Preserve Vector + OCR / حفظ الرسم المتجهي وإضافة OCR** retains original PDF pages and adds extracted hidden text from Tesseract's PDF text layer, without overlaying OCR page images
 - Direct Arabic PDF text editing, embedded Arabic font authoring, search-result highlighting and complete RTL layout are not implemented yet
 
 ## Features
@@ -69,3 +70,7 @@ Pick three corresponding locations on each selected page. The first two define t
 ## Searchable Arabic PDF export (v1.3)
 
 Open the scanned PDF and choose **Create Searchable PDF / إنشاء PDF قابل للبحث**. Pick Arabic, English or both and save to a **different** PDF file. The program renders all pages as images and invokes locally installed Tesseract to produce a PDF with a hidden OCR text layer, then combines pages. OCR accuracy varies with scan quality, Arabic ligatures and diacritics; confirm text using a PDF reader. Source vector graphics, editable text, bookmarks, links, and annotations are not preserved. For engineering drawings, retain the original vector PDF and use this new copy only as a searchable reference. Tesseract and language models are separate prerequisites.
+
+## Vector-preserving OCR export (v1.4 preview)
+
+In the PDF viewer choose **Preserve Vector + OCR / حفظ الرسم المتجهي وإضافة OCR**. This method overlays extracted OCR text onto original PDF page content. Existing linework, image content, page annotations, and most page resources remain in the PDF. Tesseract must be installed locally with the requested language models. Unsupported: rotated or custom-cropped pages, signed PDFs (signatures are invalidated), and guaranteed exact text alignment on unusual sheet formats. Text recognition is imperfect, including Arabic diacritics and complex mixed-direction passages. Before using the output, inspect original geometry, page count, annotations, fonts and OCR text positioning. Save to a new PDF path, never the source file.
