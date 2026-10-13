@@ -31,6 +31,9 @@ def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_
                 image_b=translate_to_match(image_b,dx,dy)
         delta = ImageChops.difference(image_a,image_b).convert("L")
         mask = delta.point(lambda p: 255 if p > 24 else 0)
+        # Changed-pixel fraction is a visual-difference metric, NOT an alignment confidence score.
+        changed_pixels = sum(mask.histogram()[255:])
+        changed_fraction = changed_pixels / (image_b.width * image_b.height)
         overlay = image_b.copy()
         overlay.paste((255,0,0), (0,0,*image_b.size), mask)
         result = ImageChops.blend(image_b,overlay,0.55)
@@ -43,7 +46,9 @@ def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_
         result.save(target, format="PNG")
         if return_alignment:
             return target,{"shift_x_px":dx,"shift_y_px":dy,"estimated":valid,"manual_registration":manual_info,
-                "warning":"Translation-only estimate; visually verify alignment before using highlighted changes."}
+                "changed_pixel_fraction":round(changed_fraction,6),
+                "registration_method":"manual_two_point" if manual_info else ("estimated_translation" if valid else "none"),
+                "warning":"Changed-pixel fraction is not alignment confidence; verify registration and genuine drawing changes manually."}
         return target
     finally:
         a.close()
