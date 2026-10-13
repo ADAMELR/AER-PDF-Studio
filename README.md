@@ -1,4 +1,4 @@
-# AER PDF Studio — Community Preview 0.9
+# AER PDF Studio — Community Preview 1.0
 
 Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**, **pypdfium2**, Pillow and ReportLab.
 
@@ -10,10 +10,11 @@ Open-source Windows-oriented PDF workspace, implemented with Tkinter, **pypdf**,
 - Measurement register with CSV export and local JSON project save/reopen, including per-page calibrations
 - Multi-page visual difference images with translation-only auto-alignment (same page sizes and counts)
 - Side-by-side drawing comparison images (original next to revised with red-highlighted differences)
-- Interactive selection of two matching control points on selected pages on original and revised drawings
+- Interactive selection of three matching control points on selected pages on original and revised drawings
 - Manual two-point rotation, uniform scaling and translation on selected pages; other pages use automatic translation-only matching
 - Per-page alignment_report.json recording offsets, registration method, and percentage of changed pixels
 - drawing_revision_register.csv with a manual-review-required status
+- An independent third corresponding point used to calculate a check residual (rendered pixels) after alignment
 - Drag a rectangle on a page and save visible red markup into a **new PDF**
 - Reorder, merge, split and rotate PDFs
 - Automated tests on Windows and Ubuntu for Python 3.11 and 3.13
@@ -40,3 +41,7 @@ Tests: `py -m unittest discover -s tests -v`.
 Original project code is MIT licensed. Third-party libraries and their dependencies retain their own licensing and required notices. Review `AUDIT.md`; audit bundled PDFium binary notices before public executable distribution. PDF files can contain malicious content: only use trusted inputs during this prototype stage. This is not a security-hardened PDF editor or an engineering-certified measuring tool.
 
 Roadmap: registration accuracy checks with independent control points, editable annotation layers, OCR, visual revisions and overlay, and opt-in GPT assistance.
+
+## Alignment check
+
+Pick three corresponding locations on each selected page. The first two define the rotation/scale/translation; the third is held out for validation. A residual at or below 3 raster pixels receives a CHECK label, otherwise REVIEW. This threshold is a preliminary heuristic, not a certified accuracy criterion; all drawing comparisons remain subject to manual review.
