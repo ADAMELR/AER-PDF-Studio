@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from PIL import Image
 
 from qt_model import DocumentState, page_size_fit
+from compare_batch import compare_document_pages
 from pdf_operations import merge_pdfs, split_pdf, rotate_pdf
 from measurements import calibrate, length_metres, rectangle_area_m2, screen_to_pdf
 from takeoff import Measurement, export_register_csv
@@ -500,9 +501,22 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self,"Rotate error",str(exc))
 
     def compare(self):
-        QMessageBox.information(self,"Drawing comparison",
-            "The original comparison workflow remains available in the classic application (app.py). "
-            "Qt integration of the manual three-point picker is not yet implemented.")
+        original,_=QFileDialog.getOpenFileName(self,"Original drawing PDF","","PDF files (*.pdf)")
+        if not original:
+            return
+        revised,_=QFileDialog.getOpenFileName(self,"Revised drawing PDF","","PDF files (*.pdf)")
+        if not revised:
+            return
+        folder=QFileDialog.getExistingDirectory(self,"Choose comparison output directory")
+        if not folder:
+            return
+        try:
+            outputs=compare_document_pages(original,revised,folder,side_by_side=True)
+            QMessageBox.information(self,"Comparison complete",
+                f"Saved {len(outputs)} comparison images, an alignment report and a revision CSV. "
+                "Inspect all results manually. Manual three-point registration remains in the classic app.")
+        except Exception as exc:
+            QMessageBox.critical(self,"Comparison error",str(exc))
 
     def export_measurements(self):
         view=self.need_document()
