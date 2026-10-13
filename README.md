@@ -6,7 +6,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-informational)](https://github.com/ADAMELR/AER-PDF-Studio/releases)
 
-**[Download releases](https://github.com/ADAMELR/AER-PDF-Studio/releases)** · **[Features](#features)** · **[Getting started](#getting-started)** · **[Report a bug](https://github.com/ADAMELR/AER-PDF-Studio/issues/new/choose)**
+**[User Wiki](docs/wiki/Home.md)** · **[Download releases](https://github.com/ADAMELR/AER-PDF-Studio/releases)** · **[Features](#features)** · **[Getting started](#getting-started)** · **[Report a bug](https://github.com/ADAMELR/AER-PDF-Studio/issues/new/choose)**
 
 > **Community Preview v1.4 — not a certified engineering, document-control or PDF-signing product.**
 > Release downloads will appear under **Releases** once a reviewed release is published.
@@ -31,6 +31,10 @@ AER PDF Studio is a locally running Python/Tkinter desktop application. It is de
 ### Screenshots and demos
 
 Real screenshots and a short demonstration of the Windows interface are planned. **Screenshots have intentionally not been fabricated.** Contributions of verified screenshots or a screen recording are welcome; see [Contributing](CONTRIBUTING.md).
+
+## Documentation and Wiki
+
+Read the [AER PDF Studio Wiki knowledge base](docs/wiki/Home.md) for installation, PDF tools, engineering measurements, revision comparison, Arabic OCR and troubleshooting. These pages are maintained in the main repository under [`docs/wiki`](docs/wiki); a separate GitHub Wiki tab may need an initial manual publication because the GitHub Wiki is a different Git repository.
 
 ## Getting started
 
