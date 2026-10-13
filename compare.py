@@ -1,10 +1,11 @@
 """Visual drawing comparison with optional translation-only alignment."""
 from pathlib import Path
 import pypdfium2 as pdfium
-from PIL import ImageChops
+from PIL import Image, ImageChops
+from control_points import align_control_points
 from alignment import estimate_translation, translate_to_match
 
-def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_align=True, return_alignment=False):
+def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_align=True, return_alignment=False, control_points=None, side_by_side=False):
     if scale <= 0 or scale > 4:
         raise ValueError("Scale must be between 0 and 4")
     a = pdfium.PdfDocument(str(original))
@@ -20,7 +21,11 @@ def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_
         if image_a.size != image_b.size:
             raise ValueError("Raster dimensions differ")
         dx,dy,valid=(0,0,False)
-        if auto_align:
+        manual_info=None
+        if control_points is not None:
+            manual_ref,manual_moving=control_points
+            image_b,manual_info=align_control_points(image_a,image_b,manual_ref,manual_moving)
+        elif auto_align:
             dx,dy,valid=estimate_translation(image_a,image_b)
             if valid:
                 image_b=translate_to_match(image_b,dx,dy)
@@ -29,10 +34,15 @@ def compare_pages(original, revised, destination, page_index=0, scale=1.5, auto_
         overlay = image_b.copy()
         overlay.paste((255,0,0), (0,0,*image_b.size), mask)
         result = ImageChops.blend(image_b,overlay,0.55)
+        if side_by_side:
+            combined=Image.new("RGB",(image_a.width*2,image_a.height),"white")
+            combined.paste(image_a,(0,0))
+            combined.paste(result,(image_a.width,0))
+            result=combined
         target = Path(destination)
         result.save(target, format="PNG")
         if return_alignment:
-            return target,{"shift_x_px":dx,"shift_y_px":dy,"estimated":valid,
+            return target,{"shift_x_px":dx,"shift_y_px":dy,"estimated":valid,"manual_registration":manual_info,
                 "warning":"Translation-only estimate; visually verify alignment before using highlighted changes."}
         return target
     finally:
