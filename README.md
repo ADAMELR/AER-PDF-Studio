@@ -28,7 +28,7 @@ Implemented in `qt_app.py`:
 - PDF merge, split, rotation, and automatic drawing revision comparison
 - New independently tested Qt Windows developer-preview build pipeline
 
-Not yet migrated: manual three-point comparison registration, polygon takeoff UI, editable native annotations, full Arabic translation, arbitrary PDF text editing, advanced Acrobat-style selection/annotation tools, and a fully validated high-DPI production workflow. The classic application continues to supply the earlier comparison and annotation features.
+Newly integrated: three-point manual drawing registration with held-out check point, polygon takeoff with visible vertices, and saved-measurement project reopen. Still not migrated: editable native annotations, full Arabic translation, arbitrary PDF text editing, advanced Acrobat-style selection/annotation tools, and a fully validated high-DPI production workflow. The classic application continues to supply the earlier comparison and annotation features.
 
 **Run Qt from source (Windows):**
 
