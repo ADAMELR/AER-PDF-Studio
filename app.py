@@ -10,7 +10,7 @@ from page_selection import parse_page_selection
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AER PDF Studio — Community Preview 0.9")
+        self.title("AER PDF Studio — Community Preview 1.0")
         self.geometry("900x600")
         self.files = []
         bar = ttk.Frame(self, padding=10)
